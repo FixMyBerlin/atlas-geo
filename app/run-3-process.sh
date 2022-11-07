@@ -63,7 +63,12 @@ ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR
 echo "🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 "
 echo "🥐 LUA+SQL for Topic: bicycleRoadInfrastructure.lua"
 ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}bicycleRoadInfrastructure.lua ${OSM_FILTERED_FILE}
-# psql -q -f "${PROCESS_DIR}bicycleRoadInfrastructure.lua.sql"
+# psql -q -f "${PROCESS_DIR}bicycleRoadInfrastructure.sql"
+
+echo "🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 "
+echo "🥐 LUA+SQL for Topic: bicycleRoadInfrastructureCenterline.lua"
+${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}bicycleRoadInfrastructureCenterline.lua ${OSM_FILTERED_FILE}
+psql -q -f "${PROCESS_DIR}bicycleRoadInfrastructureCenterline.sql"
 
 # echo "🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 🥐 "
 # echo "🥐 LUA+SQL for Topic: parking"
