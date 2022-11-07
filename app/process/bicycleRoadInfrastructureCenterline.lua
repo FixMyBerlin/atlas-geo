@@ -62,11 +62,12 @@ function osm2pgsql.process_way(object)
   AddSkipInfoToHighways(object)
 
   -- These are stored in a separated table because wen need to translate the geometry by half the road width
+  -- TODO: add tags for opposite cycyleways and handle them properly e.g. cycleway=opposite_track | opposite_share_busway
+  -- TODO2: we shouldnt need "seperate" tag as we we'll always process the seperated geometries
   local offsetDirections = {["cycleway:left"] = 1, ["cycleway:right"] = -1 }
-  local trackVariants = Set({"track", "lane", "separate"})
-  --  we miss trackVariant  = `shared_lane`
+  local trackVariants = Set({"track", "lane", "separate", "share_busway", "shared_lane"})
   for tag, sign in pairs(offsetDirections) do
-    if trackVariants[object.tags[tag]] or trackVariants[object.tags["cycleway:both"]] then
+    if trackVariants[object.tags[tag]] ~= nil or trackVariants[object.tags["cycleway:both"]] ~= nil then
       -- print(object.tags.name)
       object.tags.category = "cyclewaySeparated"
       object.tags._centerline = "tagged on centerline"

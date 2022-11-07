@@ -29,6 +29,41 @@ local skipTable = osm2pgsql.define_table({
   }
 })
 
+
+local translateTable = osm2pgsql.define_table({
+  name = 'bicycleRoadInfrastructureCenterline',
+  ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
+  columns = {
+    { column = 'tags', type = 'jsonb' },
+    { column = 'geom', type = 'linestring' },
+    { column = 'offset', type='real'}
+  }
+})
+
+local function roadWidth(tags)
+  if tags["width"] ~= nil then
+    return tonumber(string.gmatch(tags["width"], "[^%s]+")())
+  end
+  if tags["est_width"] ~= nil then
+    return tonumber(string.gmatch(tags["est_width"], "[^%s]+")())
+  end
+  -- if tags["lanes"] ~= nil then
+  --   return tonumber(tags["lanes"]) * 2.5
+  -- end
+  local streetWidths = {primary=10, secondary=8, tertiary=6, residential=6}
+  if streetWidths[tags["highway"]] ~= nil then
+    return streetWidths[tags["highway"]]
+  end
+    -- if tags["highway"] == "cycleway" then
+  --   print(tags["cycleway"])
+  -- end
+  -- print(tags["highway"])
+  -- print(tags["lanes"])
+  -- print(tags["tracks"])
+  return 6
+end
+
+
 function osm2pgsql.process_way(object)
   if not object.tags.highway then return end
 
@@ -49,6 +84,41 @@ function osm2pgsql.process_way(object)
     object.tags._skipNotes = object.tags._skipNotes .. ";Skipped `highway=steps`"
     object.tags._skip = true
   end
+
+
+  -- Insert split up logic here:
+  local offsetDirections = {["cycleway:left"] = 1, ["cycleway:right"] = -1 }
+  for tag, sign in pairs(offsetDirections) do
+    if object.tags[tag] ~= nil or object.tags["cycleway:both"] ~= nil then
+      object.tags._offset = roadWidth(object.tags) / 2
+      object.tags._centerline = "tagged on centerline"
+      object.tags.highway = "cycleway"
+      object.tags.cycleway = object.tags[tag]
+      if object.tags["cycleway:both"] ~= nil then
+        object.tags._direction = 0
+        object.tags.cycleway = object.tags["cycleway:both"]
+      else
+        object.tags._direction = sign
+      end
+    end
+  end
+
+    -- Insert split up logic here:
+    local offsetDirections = {["sidewalk:left:bicycle"] = 1, ["sidewalk:right:bicycle"] = -1 }
+    for tag, sign in pairs(offsetDirections) do
+      if object.tags[tag] ~= nil or object.tags["sidewalk:both:bicycle"] ~= nil then
+        -- print(object.tags.name)
+        object.tags._centerline = "tagged on centerline"
+        object.tags._offset = roadWidth(object.tags) / 2
+        object.tags.highway = "sidewalk"
+        object.tags.cycleway = "yes"
+        if object.tags["cycleway:both"] ~= nil then
+          object.tags._direction = 0
+        else
+          object.tags._direction = sign
+        end
+      end
+    end
 
   -- Handle `highway=pedestrian + bicycle=yes/!=yes`
   -- Include "Fußgängerzonen" only when explicitly allowed for bikes. "dismount" does counts as "no"
@@ -118,13 +188,13 @@ function osm2pgsql.process_way(object)
   -- 1. add internal tags like "_centerline=right" here
   -- 2. use those to create duplicated geometries with multiple insert calls below
   -- 3. selecte those duplicated geoms and move them left/right of the centerline (based on the _centerline=left + _centerlineOffset = <RoadWith|DefaultByRoadClass>) in PostGIS?
-  if object.tags["sidewalk:left:bicycle"] == "yes"
-      or object.tags["sidewalk:right:bicycle"] == "yes"
-      or object.tags["sidewalk:both:bicycle"] == "yes" then
-    object.tags.category = "footway_bicycleYes"
-    object.tags._centerline = "tagged on centerline"
-    object.tags._skip = false
-  end
+  -- if object.tags["sidewalk:left:bicycle"] == "yes"
+  --     or object.tags["sidewalk:right:bicycle"] == "yes"
+  --     or object.tags["sidewalk:both:bicycle"] == "yes" then
+  --   object.tags.category = "footway_bicycleYes"
+  --   object.tags._centerline = "tagged on centerline"
+  --   object.tags._skip = false
+  -- end
 
   -- Handle "baulich abgesetzte Radwege" ("Protected Bike Lane")
   -- This part relies heavly on the `is_sidepath` tagging.
@@ -158,14 +228,14 @@ function osm2pgsql.process_way(object)
     object.tags._skip = false
   end
   -- … mapped on the centerline
-  -- TODO CENTERLINE: See above…
-  if object.tags["cycleway:right"] == "track"
-      or object.tags["cycleway:left"] == "track"
-      or object.tags["cycleway:both"] == "track" then
-    object.tags.category = "cyclewaySeparated"
-    object.tags._centerline = "tagged on centerline"
-    object.tags._skip = false
-  end
+  -- -- TODO CENTERLINE: See above…
+  -- if object.tags["cycleway:right"] == "track"
+  --     or object.tags["cycleway:left"] == "track"
+  --     or object.tags["cycleway:both"] == "track" then
+  --   object.tags.category = "cyclewaySeparated"
+  --   object.tags._centerline = "tagged on centerline"
+  --   object.tags._skip = false
+  -- end
 
   -- Handle "frei geführte Radwege", dedicated cycleways that are not next to a road
   -- Eg. https://www.openstreetmap.org/way/27701956
@@ -185,6 +255,8 @@ function osm2pgsql.process_way(object)
     "_centerline",
     "_skip",
     "_skipNotes",
+    "_direction",
+    "_offset",
     "access",
     "bicycle_road",
     "bicycle",
@@ -218,9 +290,32 @@ function osm2pgsql.process_way(object)
     -- We don't need this data here…
     object.tags._skip = nil
     object.tags._skipNotes = nil
-    table:insert({
-      tags = object.tags,
-      geom = object:as_linestring()
-    })
+    if object.tags._centerline ~= nil then
+      print("inserting into BI_translate_table")
+      if object.tags._direction == 0 then
+        translateTable:insert({
+          tags = object.tags,
+          geom = object:as_linestring(),
+          offset = object.tags._offset
+        })
+        translateTable:insert({
+          tags = object.tags,
+          geom = object:as_linestring(),
+          offset = -1* object.tags._offset
+        })
+      else
+        translateTable:insert({
+          tags = object.tags,
+          geom = object:as_linestring(),
+          offset = object.tags._direction * object.tags._offset
+        })
+      end
+    else
+      print("inserting into BI_table")
+      table:insert({
+        tags = object.tags,
+        geom = object:as_linestring()
+      })
+    end
   end
 end
