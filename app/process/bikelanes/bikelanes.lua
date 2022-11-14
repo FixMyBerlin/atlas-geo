@@ -276,35 +276,38 @@ function osm2pgsql.process_way(object)
     })
   end
 
+
   -- apply predicates nested
-  local offsetDirections = {
-    ["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1},
-    ["sidewalk:left:bicycle"] = {1}, ["sidewalk:right:bicycle"] = {-1}, ["sidewalk:both:bicycle"] = {-1, 1} }
-  for tag, signs in pairs(offsetDirections) do
-    if object.tags[tag] ~= nil then
-      local offset = roadWidth(object.tags) / 2
-      object.tags._centerline = "tagged on centerline"
-      -- sets the highway category to the first tag of the nesting
-      object.tags.highway = string.gmatch(tag, "([^:]+)")()
-      -- sets the cycleway tag to the value of nested tags
-      object.tags.cycleway = object.tags[tag]
-      if applyPredicates(object.tags) then
-        for _, sign in pairs(signs) do
-          normalizeTags(object)
-          translateTable:insert({
-            tags = object.tags,
-            geom = object:as_linestring(),
-            offset = sign * offset
-          })
+  -- transformations:
+  local footwayTransformer = {highway="footway", tags={["sidewalk:left:bicycle"] = {1}, ["sidewalk:right:bicycle"] = {-1}, ["sidewalk:both:bicycle"] = {-1, 1} }}
+  local cyclewayTransformer ={highway="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
+  local transformations = {footwayTransformer, cyclewayTransformer}
+  for _, transformer in pairs(transformations) do
+    for tag, signs in pairs(transformer.tags) do
+      if object.tags[tag] ~= nil then
+        local offset = roadWidth(object.tags) / 2
+        object.tags._centerline = "tagged on centerline"
+        -- sets the highway category to the first tag of the nesting
+        object.tags.highway = transformer.highway
+        -- sets the cycleway tag to the value of nested tags
+        object.tags.bicycle = object.tags[tag]
+        if applyPredicates(object.tags) then
+          for _, sign in pairs(signs) do
+            normalizeTags(object)
+            translateTable:insert({
+              tags = object.tags,
+              geom = object:as_linestring(),
+              offset = sign * offset
+            })
+          end
         end
       end
     end
   end
-
   -- TODO SKIPLIST: For ZES, we skip "Verbindungsstücke", especially for the "cyclewayAlone" case
   -- We would have to do this in a separate processing step or wait for length() data to be available in LUA
   -- MORE: osm-scripts-Repo => utils/Highways-BicycleWayData/filter/radwegVerbindungsstueck.ts
-  if object.tags._skip then
+  if object.tags.category == nil then
     normalizeTags(object)
     skipTable:insert({
       tags = object.tags,
