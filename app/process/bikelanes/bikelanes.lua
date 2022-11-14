@@ -283,13 +283,13 @@ function osm2pgsql.process_way(object)
   local cyclewayTransformer ={highway="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
   local transformations = {footwayTransformer, cyclewayTransformer}
   for _, transformer in pairs(transformations) do
+    -- set the highway category
+    object.tags.highway = transformer.highway
+    object.tags._centerline = "tagged on centerline"
+    local offset = roadWidth(object.tags) / 2
     for tag, signs in pairs(transformer.tags) do
       if object.tags[tag] ~= nil then
-        local offset = roadWidth(object.tags) / 2
-        object.tags._centerline = "tagged on centerline"
-        -- sets the highway category to the first tag of the nesting
-        object.tags.highway = transformer.highway
-        -- sets the cycleway tag to the value of nested tags
+        -- sets the bicycle tag to the value of nested tags
         object.tags.bicycle = object.tags[tag]
         if applyPredicates(object.tags) then
           for _, sign in pairs(signs) do
