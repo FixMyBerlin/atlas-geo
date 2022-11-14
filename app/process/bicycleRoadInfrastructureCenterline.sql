@@ -10,6 +10,6 @@
 --                                                                                 ST_Transform(geom, 25833), "offset", 'quad_segs=4 join=round'), 3857))
 --                                                                                 as geom FROM "bicycleRoadInfrastructure_toTranslate" where ST_IsSimple(geom);
 
-update "bicycleRoadInfrastructureCenterline" set geom=ST_Reverse(ST_Transform(ST_OffsetCurve(ST_Transform(geom, 25833), "offset", 'quad_segs=4 join=round'), 3857)) where ST_IsSimple(geom);
-insert into "bicycleRoadInfrastructureCenterline" select osm_type, osm_id, tags, geom from "bicycleRoadInfrastructure";
-delete from "bicycleRoadInfrastructure_skipList" where exists (select 1 from "bicycleRoadInfrastructureCenterline" where "bicycleRoadInfrastructureCenterline".osm_id = "bicycleRoadInfrastructure_skipList".osm_id)
+update "bikelanesCenterline" set geom=ST_Reverse(ST_Transform(ST_OffsetCurve(ST_Transform(geom, 25833), "offset", 'quad_segs=4 join=round'), 3857)) where ST_IsSimple(geom);
+insert into "bikelanesCenterline" select osm_type, osm_id, tags, geom from "bikelanes";
+delete from "bikelanes_skipList" where exists (select 1 from "bikelanesCenterline" where "bikelanesCenterline".osm_id = "bikelanes_skipList".osm_id)

@@ -9,10 +9,12 @@ require("AddMetadata")
 require("AddUrl")
 require("HighwayClasses")
 require("AddSkipInfoToHighways")
+require("AddSkipInfoByWidth")
+require("CheckDataWithinYears")
 require("StartsWith")
 
 local table = osm2pgsql.define_table({
-  name = 'bicycleRoadInfrastructure',
+  name = 'bikelanes',
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
   columns = {
     { column = 'tags', type = 'jsonb' },
@@ -21,7 +23,7 @@ local table = osm2pgsql.define_table({
 })
 
 local skipTable = osm2pgsql.define_table({
-  name = 'bicycleRoadInfrastructure_skipList',
+  name = 'bikelanes_skipList',
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
   columns = {
     { column = 'tags', type = 'jsonb' },
@@ -31,7 +33,7 @@ local skipTable = osm2pgsql.define_table({
 
 
 local translateTable = osm2pgsql.define_table({
-  name = 'bicycleRoadInfrastructureCenterline',
+  name = 'bikelanesCenterline',
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
   columns = {
     { column = 'tags', type = 'jsonb' },
@@ -221,6 +223,28 @@ local function applyPredicates(tags)
   return false
 end
 
+local function normalizeTags(object)
+  FilterTags(object.tags, allowed_tags)
+  AddMetadata(object)
+  AddUrl("way", object)
+   -- Presence of data
+   if (object.tags.category) then
+    object.tags.is_present = true
+  else
+    object.tags.is_present = false
+  end
+
+  -- Freshness of data, see documentation
+  local withinYears = CheckDataWithinYears("cycleway", object.tags, 2)
+  if (withinYears.result) then
+    object.tags.is_fresh = true
+    object.tags.fresh_age_days = withinYears.diffDays
+  else
+    object.tags.is_fresh = false
+    object.tags.fresh_age_days = withinYears.diffDays
+  end
+end
+
 function osm2pgsql.process_way(object)
   if not object.tags.highway then return end
 
@@ -233,6 +257,7 @@ function osm2pgsql.process_way(object)
   object.tags._skipNotes = "Skipped by default `true`"
   object.tags._skip = true
 
+  -- TODO: return bool because skip logic changed
   AddSkipInfoToHighways(object)
 
   -- Skip `highway=steps`
@@ -244,6 +269,7 @@ function osm2pgsql.process_way(object)
 
   -- apply predicates flat
   if applyPredicates(object.tags) then
+    normalizeTags(object)
     table:insert({
       tags = object.tags,
       geom = object:as_linestring()
@@ -264,9 +290,7 @@ function osm2pgsql.process_way(object)
       object.tags.cycleway = object.tags[tag]
       if applyPredicates(object.tags) then
         for _, sign in pairs(signs) do
-          FilterTags(object.tags, allowed_tags)
-          AddMetadata(object)
-          AddUrl("way", object)
+          normalizeTags(object)
           translateTable:insert({
             tags = object.tags,
             geom = object:as_linestring(),
@@ -280,8 +304,8 @@ function osm2pgsql.process_way(object)
   -- TODO SKIPLIST: For ZES, we skip "Verbindungsstücke", especially for the "cyclewayAlone" case
   -- We would have to do this in a separate processing step or wait for length() data to be available in LUA
   -- MORE: osm-scripts-Repo => utils/Highways-BicycleWayData/filter/radwegVerbindungsstueck.ts
-
   if object.tags._skip then
+    normalizeTags(object)
     skipTable:insert({
       tags = object.tags,
       geom = object:as_linestring()

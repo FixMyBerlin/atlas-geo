@@ -8,6 +8,9 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging-tiles.radverkehrsatlas.de
 
     env:
       SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
@@ -71,7 +74,7 @@ jobs:
         target: "/srv/tarmac/"
         overwrite: true
 
-    - name: Pull & Run image on VPS
+    - name: Stop containers on VPS
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
@@ -80,16 +83,27 @@ jobs:
         script: |
           echo "Pulling and running docker compose"
           cd /srv/tarmac/
-          docker image prune -a
+          docker image prune -fa
           docker compose -f docker-compose.staging.yml down
           docker compose -f docker-compose.traefik.yml down
-          rm .env
-          touch .env
+          sleep 15
+          rm .env.staging
+
+    - name: Start container on VPS
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        password: ${{ secrets.SSH_PASSWORD }}
+        script: |
+          touch .env.staging
           echo PGUSER='${{ secrets.DATABASE_USER }}' >> .env
-          echo PGHOST='${{ secrets.DATABASE_HOST }}' >> .env
-          echo PGDATABASE='${{ secrets.DATABASE_NAME }}' >> .env
-          echo PGPASSWORD='${{ secrets.DATABASE_PASSWORD }}' >> .env
-          echo DATABASE_URL='postgres://${{ secrets.DATABASE_USER}}:${{ secrets.DATABASE_PASSWORD_ENCODED}}@${{ secrets.DATABASE_HOST }}/${{ secrets.DATABASE_NAME}}' >> .env
-          echo GITHUB_SHA='${{ github.sha }}' >> .env
+          echo PGHOST='${{ secrets.DATABASE_HOST }}' >> .env.staging
+          echo PGDATABASE='${{ secrets.DATABASE_NAME }}' >> .env.staging
+          echo PGPASSWORD='${{ secrets.DATABASE_PASSWORD }}' >> .env.staging
+          echo DATABASE_URL='postgres://${{ secrets.DATABASE_USER}}:${{ secrets.DATABASE_PASSWORD_ENCODED}}@${{ secrets.DATABASE_HOST }}/${{ secrets.DATABASE_NAME}}' >> .env.staging
+          echo GITHUB_SHA='${{ github.sha }}' >> .env.staging
+          docker compose -f docker-compose.staging.yml pull
+          docker compose -f docker-compose.traefik.yml pull
           docker compose -f docker-compose.staging.yml up -d
           docker compose -f docker-compose.traefik.yml up -d
