@@ -44,10 +44,10 @@ local translateTable = osm2pgsql.define_table({
 
 local function roadWidth(tags)
   if tags["width"] ~= nil then
-    return tonumber(string.gmatch(tags["width"], "[^%s]+")())
+    return tonumber(string.gmatch(tags["width"], "[^%s;]+")())
   end
   if tags["est_width"] ~= nil then
-    return tonumber(string.gmatch(tags["est_width"], "[^%s]+")())
+    return tonumber(string.gmatch(tags["est_width"], "[^%s;]+")())
   end
   -- if tags["lanes"] ~= nil then
   --   return tonumber(tags["lanes"]) * 2.5
