@@ -49,19 +49,10 @@ local function roadWidth(tags)
   if tags["est_width"] ~= nil then
     return tonumber(string.gmatch(tags["est_width"], "[^%s;]+")())
   end
-  -- if tags["lanes"] ~= nil then
-  --   return tonumber(tags["lanes"]) * 2.5
-  -- end
   local streetWidths = {primary=10, secondary=8, tertiary=6, residential=6}
   if streetWidths[tags["highway"]] ~= nil then
     return streetWidths[tags["highway"]]
   end
-    -- if tags["highway"] == "cycleway" then
-  --   print(tags["cycleway"])
-  -- end
-  -- print(tags["highway"])
-  -- print(tags["lanes"])
-  -- print(tags["tracks"])
   return 6
 end
 
@@ -154,7 +145,7 @@ local function cyclewaySeperated(tags)
   -- Case: The crossing version of a separate cycleway next to a road
   -- The same case as the is_sidepath=yes above, but on crossings we don't set that.
   -- Eg https://www.openstreetmap.org/way/963592923
-  result = result or (tags.highway == "cycleway" or tags.cycleway == "crossing")
+  result = result or (tags.highway == "cycleway" and tags.cycleway == "crossing")
   -- Case: Separate cycleway identified via traffic_sign
   -- traffic_sign=DE:237, https://wiki.openstreetmap.org/wiki/DE:Tag:traffic%20sign=DE:237
   -- Eg https://www.openstreetmap.org/way/964476026
