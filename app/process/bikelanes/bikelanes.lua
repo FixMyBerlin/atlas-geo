@@ -270,8 +270,8 @@ function osm2pgsql.process_way(object)
 
   -- apply predicates nested
   -- transformations:
-  local footwayTransformer = {highway="footway", tags={["sidewalk:left:bicycle"] = {1}, ["sidewalk:right:bicycle"] = {-1}, ["sidewalk:both:bicycle"] = {-1, 1} }}
-  local cyclewayTransformer ={highway="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
+  local footwayTransformer = {highway="footway", dest="bicycle", tags={["sidewalk:left:bicycle"] = {1}, ["sidewalk:right:bicycle"] = {-1}, ["sidewalk:both:bicycle"] = {-1, 1} }}
+  local cyclewayTransformer ={highway="cycleway", dest="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
   local transformations = {footwayTransformer, cyclewayTransformer}
   for _, transformer in pairs(transformations) do
     -- set the highway category
@@ -279,9 +279,9 @@ function osm2pgsql.process_way(object)
     object.tags._centerline = "tagged on centerline"
     local offset = roadWidth(object.tags) / 2
     for tag, signs in pairs(transformer.tags) do
-      if object.tags[tag] ~= nil then
+      if object.tags[tag] ~= nil and object.tags[tag] ~= "no" then
         -- sets the bicycle tag to the value of nested tags
-        object.tags.bicycle = object.tags[tag]
+        object.tags[transformer.dest] = object.tags[tag]
         if applyPredicates(object.tags) then
           for _, sign in pairs(signs) do
             normalizeTags(object)
