@@ -1,6 +1,6 @@
 -- * @desc Add `_skip = true` and `_skipNotes` for highways with private access, indoor, informal, "mtb"-style (inkl. width) and only allowed service values
 function AddSkipInfoToHighways(object)
-  if object.tag._skipNotes == nil then
+  if object.tags._skipNotes == nil then
     object.tags._skipNotes = ""
   end
   -- Skip all non standard access values
