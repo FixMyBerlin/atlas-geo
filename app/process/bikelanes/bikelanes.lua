@@ -206,7 +206,6 @@ local allowed_tags = Set({
   "traffic_sign",
 })
 
--- TODO: use original order / because order = priority
 local predicates = {pedestiranArea, livingStreet, bicycleRoad, footAndCycleway , footAndCyclewaySegregated, footwayBicycleAllowed, cyclewaySeperated, cycleWayAlone}
 
 local function applyPredicates(tags)
