@@ -150,11 +150,15 @@ local function cyclewaySeperated(tags)
   -- traffic_sign=DE:237, https://wiki.openstreetmap.org/wiki/DE:Tag:traffic%20sign=DE:237
   -- Eg https://www.openstreetmap.org/way/964476026
   result = result or (tags.traffic_sign == "DE:237" and tags.is_sidepath == "yes")
+
+  -- TODO: cases bellow should be handled in center line logic
   -- Case: Separate cycleway idetified via "track"-tagging.
   --    https://wiki.openstreetmap.org/wiki/DE:Tag:cycleway%3Dtrack
   --    https://wiki.openstreetmap.org/wiki/DE:Tag:cycleway%3Dopposite_track
   -- … separately mapped
   result = result or (tags.cycleway == "track" or tags.cycleway == "opposite_track")
+  -- TODO: comment
+  result = result or (tags.cycleway == "lane" or tags.cycleway == "opposite_lane")
   if result then
     tags.category = "cyclewaySeparated"
   end
@@ -173,7 +177,6 @@ local function cycleWayAlone(tags)
   end
   return result
 end
-
 
 -- whitelist of tags we want to insert intro the DB
 local allowed_tags = Set({
@@ -203,6 +206,7 @@ local allowed_tags = Set({
   "traffic_sign",
 })
 
+-- TODO: use original order / because order = priority
 local predicates = {pedestiranArea, livingStreet, bicycleRoad, footAndCycleway , footAndCyclewaySegregated, footwayBicycleAllowed, cyclewaySeperated, cycleWayAlone}
 
 local function applyPredicates(tags)
@@ -236,6 +240,16 @@ local function normalizeTags(object)
   end
 end
 
+
+local function intoSkipList(object)
+  normalizeTags(object)
+    skipTable:insert({
+      tags = object.tags,
+      geom = object:as_linestring()
+    })
+end
+
+
 function osm2pgsql.process_way(object)
   if not object.tags.highway then return end
 
@@ -245,17 +259,16 @@ function osm2pgsql.process_way(object)
   -- "rest_area" (https://wiki.openstreetmap.org/wiki/DE:Tag:highway=rest%20area)
   if not allowed_values[object.tags.highway] then return end
 
-  object.tags._skipNotes = "Skipped by default `true`"
-  object.tags._skip = true
-
-  -- TODO: return bool because skip logic changed
-  AddSkipInfoToHighways(object)
-
   -- Skip `highway=steps`
   -- We don't look at ramps on steps ATM. That is not good bicycleInfrastructure anyways
   if object.tags.highway == "steps" then
     object.tags._skipNotes = object.tags._skipNotes .. ";Skipped `highway=steps`"
     object.tags._skip = true
+  end
+  AddSkipInfoToHighways(object)
+  if object.tags._skip == true then
+    intoSkipList(object)
+    return
   end
 
   -- apply predicates
@@ -265,7 +278,7 @@ function osm2pgsql.process_way(object)
       tags = object.tags,
       geom = object:as_linestring()
     })
-    -- could return here to improve efficiency
+    return
   end
 
 
@@ -275,18 +288,16 @@ function osm2pgsql.process_way(object)
   local cyclewayTransformer ={highway="cycleway", dest="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
   local transformations = {footwayTransformer, cyclewayTransformer}
 
-  -- save highway for skiplist
-  local highway = object.tags.highway
   for _, transformer in pairs(transformations) do
     -- set the highway category
-    object.tags.highway = transformer.highway
-    object.tags._centerline = "tagged on centerline"
+    local cycleway = {highway = transformer.highway}
     local offset = roadWidth(object.tags) / 2
     for tag, signs in pairs(transformer.tags) do
       if object.tags[tag] ~= nil and object.tags[tag] ~= "no" then
+        object.tags._centerline = "tagged on centerline"
         -- sets the bicycle tag to the value of nested tags
-        object.tags[transformer.dest] = object.tags[tag]
-        if applyPredicates(object.tags) then
+        cycleway[transformer.dest] = object.tags[tag]
+        if applyPredicates(cycleway) then
           for _, sign in pairs(signs) do
             normalizeTags(object)
             translateTable:insert({
@@ -299,16 +310,11 @@ function osm2pgsql.process_way(object)
       end
     end
   end
-  object.tags.highway = highway
 
   -- TODO SKIPLIST: For ZES, we skip "Verbindungsstücke", especially for the "cyclewayAlone" case
   -- We would have to do this in a separate processing step or wait for length() data to be available in LUA
   -- MORE: osm-scripts-Repo => utils/Highways-BicycleWayData/filter/radwegVerbindungsstueck.ts
   if object.tags.category == nil then
-    normalizeTags(object)
-    skipTable:insert({
-      tags = object.tags,
-      geom = object:as_linestring()
-    })
+    intoSkipList(object)
   end
 end
