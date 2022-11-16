@@ -259,13 +259,14 @@ function osm2pgsql.process_way(object)
   -- "rest_area" (https://wiki.openstreetmap.org/wiki/DE:Tag:highway=rest%20area)
   if not allowed_values[object.tags.highway] then return end
 
+
+  AddSkipInfoToHighways(object)
   -- Skip `highway=steps`
   -- We don't look at ramps on steps ATM. That is not good bicycleInfrastructure anyways
   if object.tags.highway == "steps" then
     object.tags._skipNotes = object.tags._skipNotes .. ";Skipped `highway=steps`"
     object.tags._skip = true
   end
-  AddSkipInfoToHighways(object)
   if object.tags._skip == true then
     intoSkipList(object)
     return
