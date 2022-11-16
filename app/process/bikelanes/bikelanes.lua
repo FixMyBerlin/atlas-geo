@@ -274,6 +274,9 @@ function osm2pgsql.process_way(object)
   local footwayTransformer = {highway="footway", dest="bicycle", tags={["sidewalk:left:bicycle"] = {1}, ["sidewalk:right:bicycle"] = {-1}, ["sidewalk:both:bicycle"] = {-1, 1} }}
   local cyclewayTransformer ={highway="cycleway", dest="cycleway", tags={["cycleway:left"] = {1}, ["cycleway:right"] = {-1} , ["cycleway:both"] = {-1, 1}}}
   local transformations = {footwayTransformer, cyclewayTransformer}
+
+  -- save highway for skiplist
+  local highway = object.tags.highway
   for _, transformer in pairs(transformations) do
     -- set the highway category
     object.tags.highway = transformer.highway
@@ -296,6 +299,8 @@ function osm2pgsql.process_way(object)
       end
     end
   end
+  object.tags.highway = highway
+
   -- TODO SKIPLIST: For ZES, we skip "Verbindungsstücke", especially for the "cyclewayAlone" case
   -- We would have to do this in a separate processing step or wait for length() data to be available in LUA
   -- MORE: osm-scripts-Repo => utils/Highways-BicycleWayData/filter/radwegVerbindungsstueck.ts
