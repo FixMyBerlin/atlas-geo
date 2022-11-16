@@ -294,10 +294,10 @@ function osm2pgsql.process_way(object)
     local offset = roadWidth(object.tags) / 2
     for tag, signs in pairs(transformer.tags) do
       if object.tags[tag] ~= nil and object.tags[tag] ~= "no" then
-        object.tags._centerline = "tagged on centerline"
         -- sets the bicycle tag to the value of nested tags
         cycleway[transformer.dest] = object.tags[tag]
         if applyPredicates(cycleway) then
+        object.tags._centerline = "tagged on centerline"
           for _, sign in pairs(signs) do
             normalizeTags(object)
             translateTable:insert({
