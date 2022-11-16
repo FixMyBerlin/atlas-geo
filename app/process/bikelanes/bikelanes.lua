@@ -258,13 +258,14 @@ function osm2pgsql.process_way(object)
     object.tags._skip = true
   end
 
-  -- apply predicates flat
+  -- apply predicates
   if applyPredicates(object.tags) then
     normalizeTags(object)
     table:insert({
       tags = object.tags,
       geom = object:as_linestring()
     })
+    -- could return here to improve efficiency
   end
 
 
