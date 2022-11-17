@@ -19,10 +19,10 @@ echo "\e[1m\e[7m PROCESS – Topic: boundaries \e[27m\e[21m"
 ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}boundaries.lua ${OSM_FILTERED_FILE}
 
 echo "\e[1m\e[7m PROCESS – Topic: places \e[27m\e[21m"
-${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}places.lua ${OSM_FILTERED_FILE}
+${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}places/places.lua ${OSM_FILTERED_FILE}
 
 echo "\e[1m\e[7m PROCESS – Topic: places_todoList \e[27m\e[21m"
-${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}places_todoList.lua ${OSM_FILTERED_FILE}
+${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}places/places_todoList.lua ${OSM_FILTERED_FILE}
 
 echo "\e[1m\e[7m PROCESS – Topic: education \e[27m\e[21m"
 ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}education.lua ${OSM_FILTERED_FILE}
@@ -48,7 +48,7 @@ ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR
 
 echo "\e[1m\e[7m PROCESS – Topic: bikelanes \e[27m\e[21m"
 ${OSM2PGSQL_BIN} --create --output=flex --extra-attributes --style=${PROCESS_DIR}bikelanes/bikelanes.lua ${OSM_FILTERED_FILE}
-# psql -q -f "${PROCESS_DIR}/bikelanesCenterline.sql"
+psql -q -f "${PROCESS_DIR}bikelanes/bikelanesCenterline.sql"
 
 
 # echo "\e[1m\e[7m PROCESS – Topic: parking \e[27m\e[21m"

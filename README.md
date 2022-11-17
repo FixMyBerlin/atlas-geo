@@ -25,6 +25,10 @@ https://tiles.radverkehrsatlas.de/
 2. Then our Server IONOS builds the data. This take about 30 Min ATM.
 3. Then https://tiles.radverkehrsatlas.de/ shows new data
 
+#### Skip CI Actions
+
+ATM, the CI runs on every commit. To skip commits add `[skip actions]` to the commit message. This is a [default behaviour](https://docs.github.com/en/actions/managing-workflow-runs/skipping-workflow-runs) of Github Actions.
+
 ## 1️⃣ Setup
 
 First create a `.env` file. You can use the `.env.example` file as a template.
@@ -37,6 +41,9 @@ docker compose up -d
 # With osm processing, which runs the "app" docker image with `ruh.sh`
 docker compose --profile osm_processing up -d
 ```
+
+> **Warning"" Consider creating the Postgis extension before first run of *app*
+> ```CREATE EXTENSION postgis;```
 
 This will create the docker container and run all scripts. One this is finished, you can use the pg_tileserve-vector-tile-preview at http://localhost:7800/ to look at the data.
 

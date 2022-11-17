@@ -71,33 +71,25 @@ jobs:
         target: "/srv/tarmac/"
         overwrite: true
 
-    - name: Stop container on VPS
+    - name: Stop & start container on VPS
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         password: ${{ secrets.SSH_PASSWORD }}
         script: |
-          echo "Pulling and running docker compose"
+          echo "Stop containers on VPS"
           cd /srv/tarmac/
+          rm .env.production
           docker image prune -fa
           docker compose -f docker-compose.production.yml down
-          sleep 15
-          rm .env
-
-    - name: Start container on VPS
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        password: ${{ secrets.SSH_PASSWORD }}
-        script: |
-          touch .env
-          echo PGUSER='${{ secrets.DATABASE_USER }}' >> .env
-          echo PGHOST='${{ secrets.DATABASE_HOST }}' >> .env
-          echo PGDATABASE='${{ secrets.DATABASE_NAME }}' >> .env
-          echo PGPASSWORD='${{ secrets.DATABASE_PASSWORD }}' >> .env
-          echo DATABASE_URL='postgres://${{ secrets.DATABASE_USER}}:${{ secrets.DATABASE_PASSWORD_ENCODED}}@${{ secrets.DATABASE_HOST }}/${{ secrets.DATABASE_NAME}}' >> .env
-          echo GITHUB_SHA='${{ github.sha }}' >> .env
-          docker compose -f -f docker-compose.production.yml pull
-          docker compose -f -f docker-compose.production.yml up -d
+          echo "Start container on VPS"
+          touch .env.production
+          echo PGUSER='${{ secrets.DATABASE_USER }}' >> .env.production
+          echo PGHOST='${{ secrets.DATABASE_HOST }}' >> .env.production
+          echo PGDATABASE='${{ secrets.DATABASE_NAME }}' >> .env.production
+          echo PGPASSWORD='${{ secrets.DATABASE_PASSWORD }}' >> .env.production
+          echo DATABASE_URL='postgres://${{ secrets.DATABASE_USER}}:${{ secrets.DATABASE_PASSWORD_ENCODED}}@${{ secrets.DATABASE_HOST }}/${{ secrets.DATABASE_NAME}}' >> .env.production
+          echo GITHUB_SHA='${{ github.sha }}' >> .env.production
+          docker compose --env-file .env.production  -f docker-compose.production.yml pull
+          docker compose --env-file .env.production  -f docker-compose.production.yml up -d
