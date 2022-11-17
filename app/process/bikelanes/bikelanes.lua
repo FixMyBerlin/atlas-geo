@@ -273,6 +273,7 @@ function osm2pgsql.process_way(object)
 
   -- apply predicates
   if applyPredicates(object.tags) then
+    object.tags._skipNotes = nil
     normalizeTags(object)
     table:insert({
       tags = object.tags,
@@ -299,6 +300,7 @@ function osm2pgsql.process_way(object)
         if applyPredicates(cycleway) then
         object.tags._centerline = "tagged on centerline"
           for _, sign in pairs(signs) do
+            object.tags._skipNotes = nil
             normalizeTags(object)
             translateTable:insert({
               tags = object.tags,
