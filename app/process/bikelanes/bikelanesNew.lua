@@ -37,7 +37,7 @@ local translateTable = osm2pgsql.define_table({
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
   columns = {
     { column = 'tags', type = 'jsonb' },
-    { column = 'geom', type = 'linestring' },
+    { column = 'geom', type = 'multilinestring' },
     { column = 'offset', type = 'real' }
   }
 })
@@ -314,7 +314,7 @@ function osm2pgsql.process_way(object)
     -- in future versions we should do this as a concationation of the tables(sql)
     translateTable:insert({
       tags = object.tags,
-      geom = object:as_linestring(),
+      geom = object:as_multilinestring(),
       offset = 0
     })
     return
@@ -371,7 +371,7 @@ function osm2pgsql.process_way(object)
             normalizeTags(object)
             translateTable:insert({
               tags = object.tags,
-              geom = object:as_linestring(),
+              geom = object:as_multilinestring(),
               offset = sign * offset
             })
           end
