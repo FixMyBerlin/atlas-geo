@@ -8,30 +8,25 @@
   --  UND dann auch einen "_todo="add 'maxspeed:source=DE:urban' to way"
   -- hinweis: außerstädtisch extrapolieren wir aber keine daten, da zu wenig "richtig"
 
--- DELETE * FROM "maxspeed_transformed";
--- Thoughts to implement this:
--- filter landuse or places on type
--- project to euclidean
--- buffer that union by e.g. 10 m
--- make a union of the filter geometries
--- check intersections or inclusion for ways that lack maxspeed e.g. those in _maxspeed_missing
--- add these ways with a constant maxspeed and `present=false` into maxspeed table
--- SELECT ST_Transform(geom, 25833) from landuse where tags->>'landuse' = 'residential';
+-- TODO add other landuse than residential
 
--- UPDATE "maxspeed_transformed"
---   SELECT   maxspeed.*
---   FROM "fromTo_landuse" as landuse, "_maxspeed_missing" as maxspeed
---   WHERE ST_Intersects(maxspeed.geom::geometry , ST_Expand(landuse.geom, 10)::geometry);
+-- create one unified geometry from 'landuse' which is then used in the geometric intersection
+create table filterTable as
+select st_union(st_expand(geom, 10)) as "buffer" from landuse where tags->>'landuse' = 'residential';
 
--- UPDATE "maxspeed_transformed" SET "_maxspeed_source" = 'infereed from landuse';
+-- delete all objects that don't intersect the geometry of 'filterTable'
+delete from "_maxspeed_missing" where osm_id not in (select maxspeed.osm_id from "_maxspeed_missing" as maxspeed, filterTable where st_intersects("buffer", "geom"));
+drop table filterTable;
 
-update "_maxspeed_missing" as maxpseed
-set tags = jsonb_set(tags, '{_maxspeed_source}','"infereed from landuse"')
-WHERE ST_Intersects(maxspeed.geom::geometry , ST_Expand(landuse.geom, 10)::geometry);
+-- set the guessed values
+alter table "_maxspeed_missing" add "maxspeed" int default 50;
+alter table "_maxspeed_missing" add "present" bool default false;
+update "_maxspeed_missing" set tags = jsonb_set(tags, '{_maxspeed_source}','"infereed from landuse"');
 
-update "_maxspeed_missing" as maxpseed
-set  tags = jsonb_insert(tags, '{maxspeed}','"add maxspeed:source=DE:urban to way"')
-WHERE ST_Intersects(maxspeed.geom::geometry , ST_Expand(landuse.geom, 10)::geometry);
+-- insert into main maxspeed table
+insert into "maxspeed" select osm_type, osm_id, tags, meta, maxspeed, present, geom from "_maxspeed_missing";
+
+
 
 -- TODO copy to maxspeed main table
 
