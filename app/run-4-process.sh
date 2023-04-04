@@ -93,7 +93,7 @@ psql -q -c "COMMENT ON TABLE metadata IS '{\"osm_data_from\":\"${OSM_TIMESTAMP}\
 echo "✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ "
 echo "\e[1m\e[7m PROCESS – END \e[27m\e[21m"
 echo "Completed:"
-echo "Development http://localhost:7800"
+echo "Development http://localhost:3000/catalog"
 echo "Staging https://staging-tiles.radverkehrsatlas.de/"
 echo "Production https://tiles.radverkehrsatlas.de"
 echo "✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ "
