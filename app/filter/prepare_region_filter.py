@@ -1,7 +1,7 @@
 import os
 import json
-from shapely.geometry import shape, MultiPolygon
-from shapely.ops import cascaded_union
+from turfpy.transformation import combine
+from turfpy.helpers import feature_collection
 
 
 def process_geojson_file(file_path):
@@ -13,28 +13,22 @@ def process_geojson_file(file_path):
 
 
 def perform_union(input_dir, output_file):
-    # Create an empty list to hold the polygons
-    polygons = []
+    # Create an empty FeatureCollection to hold the polygons
+    fc = []
 
     # Process each .geojson file in the input directory
     for file_name in os.listdir(input_dir):
         if file_name.endswith('.geojson'):
             file_path = os.path.join(input_dir, file_name)
             features = process_geojson_file(file_path)
-            for feature in features:
-                polygon = shape(feature['geometry'])
-                polygons.append(polygon)
+            fc.extend(features)
 
     # Perform the geometric union
-    union_polygon = cascaded_union(polygons)
-
-    # Convert the union result to GeoJSON format
-    multipolygon = MultiPolygon([union_polygon])
-    union_geojson = json.dumps(multipolygon.__geo_interface__)
+    merged = combine(feature_collection(fc))
 
     # Write the multipolygon to the output file
     with open(output_file, 'w') as outfile:
-        outfile.write(union_geojson)
+        json.dump(merged, outfile)
 
 
 if __name__ == "__main__":
