@@ -99,3 +99,31 @@ function SmoothnessFromSurface(surface)
   end
   return smoothness, source, confidence, todo
 end
+
+function SmoothnessFromMTBScale(scale)
+  if not scale then
+    return nil, nil, nil, "No MTB scale was given"
+  end
+  if Set({"0", "0+", "0-"})[scale] then
+    return "bad", "MTB scale to smoothness", "medium", nil
+  end 
+  return "very_bad", "MTB scale to smoothness", "medium", nil
+end
+
+function SmoothnessFromTrackType(type)
+  if not type then
+    return nil, nil, nil, "No track type was given"
+  end
+  local trackTypeToSmoothness = {
+    ["grade1"] = "good",
+    ["grade2"] = "intermediate",
+    ["grade3"] = "intermediate",
+    ["grade4"] = "bad",
+    ["grade5"] = "very_bad"
+  }
+  local smoothness = trackTypeToSmoothness[type]
+  if smoothness then
+    return smoothness, "track type to smoothness", "medium", nil
+  end
+  return nil, nil, nil, nil
+end

@@ -3,8 +3,8 @@ package.path = package.path .. ";/app/process/shared/?.lua"
 package.path = package.path .. ";/app/process/roads_bikelanes/surfaceQuality/?.lua"
 require("IsFresh")
 require("SurfaceDirect")
-require("SmoothnessDirect")
-require("SmoothnessFromSurface")
+require("NormalizeSmoothness")
+require("DeriveSmoothness")
 require("Set")
 require("CopyTags")
 
@@ -21,9 +21,15 @@ function SurfaceQuality(object)
   -- 1. `smoothess` tag
   -- 2. `smoothess` extrapolated from surface data
   local todo = nil
-  local smoothness, smoothness_source, smoothness_confidence = SmoothnessDirect(tags.smoothness)
+  local smoothness, smoothness_source, smoothness_confidence = NormalizeSmoothness(tags.smoothness)
   if smoothness == nil then
     smoothness, smoothness_source, smoothness_confidence, todo = SmoothnessFromSurface(tags.surface)
+  end
+  if smoothness == nil then
+    smoothness, smoothness_source, smoothness_confidence, todo = SmoothnessFromTrackType(tags.tracktype)
+  end
+  if smoothness == nil then
+    smoothness, smoothness_source, smoothness_confidence, todo = SmoothnessFromMTBScale(tags["mtb:scale"])
   end
 
   -- all tags that are shown on the application
