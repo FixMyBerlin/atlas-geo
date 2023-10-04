@@ -19,7 +19,9 @@ function SurfaceQuality(object)
 
   -- Try to find smoothess information in the following order:
   -- 1. `smoothess` tag
-  -- 2. `smoothess` extrapolated from surface data
+  -- 2. `smoothess` extrapolated from `surface` data
+  -- 3. `smoothess` extrapolated from `tracktype` tag, mostly on `highway=track`
+  -- 4. `smoothess` extrapolated from `mtb:scale` tag, mostly on `highway=path`
   local todo = nil
   local smoothness, smoothness_source, smoothness_confidence = NormalizeSmoothness(tags.smoothness)
   if smoothness == nil then
