@@ -34,7 +34,7 @@ services:
       MaxFeaturesPerTile: 50000
       Debug: false
     ports:
-      - 7800:7800
+      - 3000:3000
     depends_on:
       db:
         condition: service_healthy

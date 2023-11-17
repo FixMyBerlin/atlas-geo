@@ -34,7 +34,7 @@ services:
     environment:
       DATABASE_URL: postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}
     ports:
-      - 7800:7800
+      - 3000:3000
     depends_on:
       db:
         condition: service_healthy
