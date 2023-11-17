@@ -1,53 +1,50 @@
-# Create export functions for our API.
-# Format: { "<DB Table Name>": "public.<DB Function Name>" }
-# init_db.py: Create a function per entry by calling INIT_FUNCTIONS.sql
-# main.py: Provide the /export/<DB Table Name> entpoint
-export_geojson_function_from_type = {
-  "barrierAreas":       "atlas_export_geojson_barrierareas",
-  "barrierLines":       "atlas_export_geojson_barrierlines",
-  "bikelanes_verified": "atlas_export_geojson_bikelanes_verified",
-  "bikelanes":          "atlas_export_geojson_bikelanes",
-  "bikelanesPresence":  "atlas_export_geojson_bikelanesPresence",
-  # "boundaries":         "atlas_export_geojson_boundaries", # does not work; we need to align the way we store the tags with the other table (it's) the only one that does not use jsonb
-  "buildings":          "atlas_export_geojson_buildings",
-  "education":          "atlas_export_geojson_education",
-  "landuse":            "atlas_export_geojson_landuse",
-  "lit_verified":       "atlas_export_geojson_lit_verified",
-  "lit":                "atlas_export_geojson_lit",
-  "maxspeed":           "atlas_export_geojson_maxspeed",
-  "places":             "atlas_export_geojson_places",
-  "poiClassification":  "atlas_export_geojson_shops",
-  "publicTransport":    "atlas_export_geojson_publictransport",
-  "roadClassification": "atlas_export_geojson_roadtypes",
-  "surfaceQuality":     "atlas_export_geojson_surfacequality",
-}
+from enum import Enum
+
+# Helper to retrieve the name of the verification table
+# The verification table is owned by prisma and part of the prisma schema.
+# See https://github.com/FixMyBerlin/atlas-app/blob/develop/db/schema.prisma
+def verification_table(table_name: str):
+    # needs to be wrapped in quotes to preserve capitalization
+    return f'"{table_name}Verification"'
+
+def verified_table(table_name: str):
+    return f'{table_name}_verified'
+
+def export_function(table_name: str):
+    return f'atlas_export_geojson_{table_name.lower()}'
+
+# Te list of DB Tables which support exports.
+ExportTable = Enum('Export Table', [(export_function(name), name) for name in [
+  "barrierAreas",
+  "barrierLines",
+  "bikelanes_verified",
+  "bikelanes",
+  "boundaries",
+  "roads",
+  "landuse",
+  "places",
+  "poiClassification",
+  "publicTransport",
+  "trafficSigns",
+  # TODO, this causes the error…
+    # api    |   File "/app/main.py", line 165, in init_api
+    # api    |     await cur.execute(processed_sql)     (…)
+    # api    | psycopg.errors.SyntaxError: syntax error at or near "-"
+    # api    | LINE 2: ...UNCTION public.atlas_export_geojson_bicycleparking-points(re...
+  # "bicycleParking-points",
+  # "bicycleParking-areas"
+]])
+
+# The list of DB Tables that support verification.
+# For each table `a` in the list we create a verification table `a_verification` and a view which joins both
+# TODO: This part is not used ATM. Instead in api/main.py we pass the names manually.
+# The issue is, that the Verification Table is now owned by Prisma with consols the naming schema.
+# Also we have it as BikelaneVerificaition (singular) in Prisma.
+# We need to either fix our conventions or change this Enum to an object that holds the name for all
+# three tables `verification_table`, `geometry_table`, `joined_table`
+VerificationTable = Enum('Verication Table', [(verification_table(name), name) for name in ["Bikelane"]])
 
 # main.py: Used as an allow list to guard the /verify/* API
 # `atlas-app` only uses approved, rejected for now.
-valid_verified_status = ['approved', 'rejected', 'undefined']
-
-# The list of DB Tables Names that we support.
-# main.py: Used as an allow list to guard the /verify/* API
-valid_verified_datasets = [
-  "bikelanes",
-  "lit",
-]
-
-# Create DB views to join *_verified data with osm2pgsql-data
-#   for pg_tileserv and for our API.
-# Format: { "<osm2pgsql-DB Table Name>": "<DB View Name>"  }
-# init_db.py: Create db views
-# main.py: Used by a guard lookup ("osm_id")
-# main.py: Provide the /verify/<osm2pgsql-DB Table Name> entpoint
-#   (It's our convention to reuse the osm2pgsql-DB Table Name as an identifier.)
-verification_tables = {
-  "bikelanes": "bikelanes_verification",
-  "lit": "lit_verification",
-}
-
-# Format: { "<DB View Name>": "<Verified-Table>"  }
-# init_db.py: Used as part of the table view creation
-joined_tables = {
-  "bikelanes_verification": "bikelanes_verified",
-  "lit_verification": "lit_verified",
-}
+VerifiedState = Enum('Verify State', [(name, name) for name in ['approved', 'rejected', 'undefined']
+])

@@ -18,26 +18,30 @@ local table = osm2pgsql.define_table({
   name = 'poiClassification_todoList',
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
   columns = {
-    { column = 'tags', type = 'jsonb' },
-    { column = 'meta', type = 'jsonb' },
-    { column = 'geom', type = 'point' },
+    { column = 'value_to_check', type = 'text' },
+    { column = 'tags',           type = 'jsonb' },
+    { column = 'meta',           type = 'jsonb' },
+    { column = 'geom',           type = 'point' },
   }
 })
 
 -- * @desc Guards extracted to be used inside projcess_*
 -- * @returns `true` whenever we want to exit processing the given data
 local function ExitProcessing(object)
-  if not object.tags.amenity then
+  if not (object.tags.amenity or object.tags.shop or object.tags.tourism) then
     return true
   end
 
-  -- We skip values that are on the allow list:
-  if ShoppingAllowedListWithCategories[object.tags.amenity] then
+  -- We skip shop=* because we allow the all; we skip values that are on the allow list
+  if object.tags.shop
+      or ShoppingAllowedListWithCategories[object.tags.amenity]
+      or ShoppingAllowedListWithCategories[object.tags.tourism]
+  then
     return true
   end
 
   -- We skip values that we explicitly desided to ignore:
-  local skip_list = Set({
+  local skip_list_amenity = Set({
     "adult_gaming_centre",
     "animal_breeding",
     "animal_shelter",
@@ -79,9 +83,11 @@ local function ExitProcessing(object)
     "lamp",
     "letter_box",
     "loading_dock",
+    "loading_ramp",
     "lounger",
     "luggage_locker",
     "mobile_library",
+    "mobility_hub",
     "motorcycle_parking",
     "nest_box",
     "nursing_home",
@@ -102,6 +108,7 @@ local function ExitProcessing(object)
     "sanitary_dump_station",
     "shelter",
     "shower",
+    "small_electric_vehicle_parking",
     "smoking_area",
     "stripclub",
     "studio",
@@ -126,9 +133,31 @@ local function ExitProcessing(object)
     "water",
     "watering_place",
     "workshop",
+    "yes",
+    "todo",
+    "barrier",
+    "warehouse",
+    "closed",
+    "cooking_school",
+    "seat",
+  })
+  if skip_list_amenity[object.tags.amenity] then
+    return true
+  end
+  local skip_list_tourism = Set({
+    "wilderness_hut",
+    "guest_house",
+    "gallery",
+    "chalet",
+    "artwork",
+    "apartment",
+    "alpine_hut",
+    "trail_riding_station",
+    "wine_cellar",
+    "no",
     "yes"
   })
-  if skip_list[object.tags.amenity] then
+  if skip_list_tourism[object.tags.tourism] then
     return true
   end
 
@@ -138,9 +167,15 @@ end
 -- Tag processing extracted to be used inside projcess_*
 local function processTags(tags)
   InferAddress(tags, tags)
-  local allowed_tags = MergeArray({ "name", "category", "type", "amenity" }, AddressKeys)
+  local allowed_tags = MergeArray({ "name", "amenity", "tourism" }, AddressKeys)
   FilterTags(tags, Set(allowed_tags))
-  tags.taginfo_url = "https://taginfo.openstreetmap.org/tags/amenity=" .. tags.amenity
+
+  if (tags.amenity) then
+    tags.taginfo_url = "https://taginfo.openstreetmap.org/tags/amenity=" .. tags.amenity
+  end
+  if (tags.tourism) then
+    tags.taginfo_url = "https://taginfo.openstreetmap.org/tags/tourism=" .. tags.tourism
+  end
 end
 
 function osm2pgsql.process_node(object)
@@ -149,6 +184,7 @@ function osm2pgsql.process_node(object)
   processTags(object.tags)
 
   table:insert({
+    value_to_check = object.tags.amenity or object.tags.shop or object.tags.tourism,
     tags = object.tags,
     meta = Metadata(object),
     geom = object:as_point()
@@ -163,6 +199,7 @@ function osm2pgsql.process_way(object)
   processTags(object.tags)
 
   table:insert({
+    value_to_check = object.tags.amenity or object.tags.shop or object.tags.tourism,
     tags = object.tags,
     meta = Metadata(object),
     geom = object:as_polygon():centroid()
@@ -175,6 +212,7 @@ function osm2pgsql.process_relation(object)
 
   processTags(object.tags)
   table:insert({
+    value_to_check = object.tags.amenity or object.tags.shop or object.tags.tourism,
     tags = object.tags,
     meta = Metadata(object),
     geom = object:as_multipolygon():centroid()
