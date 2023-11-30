@@ -28,6 +28,7 @@ services:
   tiles:
     image: ghcr.io/maplibre/martin
     container_name: tiles
+    restart: always
     environment:
       DATABASE_URL: postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}
       DbPoolMaxConns: 25
@@ -35,6 +36,14 @@ services:
       Debug: false
     ports:
       - 3000:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tiles.rule=Host(`${TILES_URL}`)"
+      - "traefik.http.routers.tiles.entrypoints=websecure"
+      - "traefik.http.routers.tiles.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tiles.tls=true"
+    networks:
+      - app_bridge
     depends_on:
       db:
         condition: service_healthy
