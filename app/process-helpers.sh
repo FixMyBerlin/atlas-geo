@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OSM2PGSQL_BIN=/usr/bin/osm2pgsql
-PROCESS_DIR="./process/"
+PROCESS_DIR=${PROCESS_DIR:-"./"}
 
 notify() {
   if [ -z $SYNOLOGY_LOG_TOKEN ]; then 
@@ -23,7 +23,7 @@ run_lua_if_debug() {
 
 run_lua() {
   start_time=$(date +%s)
-  echo -e "\e[1m\e[7m PROCESS START – Topic: $1 LUA \e[27m\e[21m\e[0m"
+  echo -e "\e[1m\e[7m START – LUA: $1  \e[27m\e[21m\e[0m"
   # notify "PROCESS START – Topic: #$1 LUA"
 
   # optional log output:
@@ -39,12 +39,12 @@ run_lua() {
   run_time=`date -d@$diff -u +%M\m\ %S\s`
 
   notify "#$1 #LUA finished in: *$run_time*"
-  echo -e "\e[1m\e[7m PROCESS END – Topic: $1 LUA \e[27m\e[21m took $run_time\e[0m"
+  echo -e "\e[1m\e[7m END – LUA: $1 LUA \e[27m\e[21m took $run_time\e[0m"
 }
 
 run_psql() {
   start_time=$(date +%s)
-  echo -e "\e[1m\e[7m PROCESS START – Topic: $1 SQL \e[27m\e[21m\e[0m"
+  echo -e "\e[1m\e[7m START – SQL: $1 \e[27m\e[21m\e[0m"
   # notify "PROCESS START – Topic: #$1 SQL"
 
   psql -q -f "${PROCESS_DIR}$1.sql"
@@ -55,5 +55,5 @@ run_psql() {
   run_time=`date -d@$diff -u +%M\m\ %S\s`
 
   notify "#$1 #SQL finished in: *$run_time*"
-  echo -e "\e[1m\e[7m PROCESS END – Topic: $1 SQL \e[27m\e[21m took $run_time\e[0m"
+  echo -e "\e[1m\e[7m END – SQL: $1 \e[27m\e[21m took $run_time\e[0m"
 }

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export PROCESS_DIR="./process/"
 source ./process-helpers.sh
 
 # LUA Docs https://osm2pgsql.org/doc/manual.html#running-osm2pgsql
