@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: ./app.Dockerfile
-    entrypoint: /app/run.sh
     container_name: app
     environment:
       PGHOST:
@@ -18,8 +17,7 @@ services:
       ID_FILTER:
       API_SECRET:
       ENVIRONMENT:
-      SYNOLOGY_LOG_TOKEN:
-      SYNOLOGY_ERROR_LOG_TOKEN:
+    command: /app/run.sh
     volumes:
       - osmfiles:/data
     depends_on:
