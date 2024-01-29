@@ -67,18 +67,18 @@ jobs:
       - name: Setup buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build app image
+      - name: Build geo image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./app.Dockerfile
+          file: ./geo.Dockerfile
           push: false
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: public.ecr.aws/n0p8j4k5/atlas/app:${{ github.sha }}
 
-      - name: Push the app image
+      - name: Push the geo image
         run: |
           aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/n0p8j4k5/
           docker push public.ecr.aws/n0p8j4k5/atlas/app:${{ github.sha }}
