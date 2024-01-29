@@ -1,4 +1,4 @@
 version: "3"
 services:
-  feo:
+  geo:
     image: public.ecr.aws/n0p8j4k5/atlas/app:${GITHUB_SHA}
