@@ -1,9 +1,7 @@
 version: "3"
 services:
   geo:
-    build:
-        context: .
-        dockerfile: ./geo.Dockerfile
+    image: public.ecr.aws/n0p8j4k5/atlas/app:${GITHUB_SHA}
     command: /geo/run.sh
     container_name: geo
     environment:
@@ -28,4 +26,8 @@ services:
     networks:
       - app_bridge
 volumes:
-  geodata:
+  osmfiles:
+networks:
+  app_bridge:
+    name: app_bridge
+    external: true

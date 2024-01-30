@@ -23,3 +23,4 @@ WORKDIR /geo
 RUN mkdir /data
 COPY geo /geo/
 RUN chmod +x /geo/*.sh
+RUN /geo/run.sh

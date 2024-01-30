@@ -1,0 +1,10 @@
+version: "3"
+services:
+  geo:
+    image: !reset null
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./geo:/geo
+
