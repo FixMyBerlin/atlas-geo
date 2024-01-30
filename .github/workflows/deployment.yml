@@ -115,6 +115,5 @@ jobs:
             echo URL='${{ inputs.URL }}' >> .env
             echo GITHUB_SHA='${{ github.sha }}' >> .env
             echo "Reload containers"
-            docker compose -f docker-compose.traefik.yml up -d
-            docker compose -f docker-compose.yml -f docker-compose.production.yml up -d
+            docker compose up -d
             docker image prune -fa
