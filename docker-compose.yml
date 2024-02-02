@@ -22,9 +22,6 @@ services:
       SYNOLOGY_ERROR_LOG_TOKEN:
     volumes:
       - osmfiles:/data
-      - type: bind
-        source: ./geo
-        target: /geo
     networks:
       - app_bridge
 volumes:
