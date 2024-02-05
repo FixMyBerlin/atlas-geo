@@ -1,0 +1,23 @@
+# This file defines the production parameters.
+# Development specific parameters are defined in `docker-compose.override.yml`, see: https://docs.docker.com/compose/compose-file/13-merge/
+version: "3"
+services:
+  geo:
+    command: /geo/run.sh
+    container_name: geo
+    environment:
+      PGHOST:
+      PGDATABASE:
+      PGUSER:
+      PGPASSWORD:
+      OSM_DOWNLOAD_URL:
+      SKIP_DOWNLOAD:
+      SKIP_TAG_FILTER:
+      DEBUG:
+      ID_FILTER:
+      API_SECRET:
+      ENVIRONMENT:
+      SYNOLOGY_LOG_TOKEN:
+      SYNOLOGY_ERROR_LOG_TOKEN:
+    volumes:
+      - osmfiles:/data

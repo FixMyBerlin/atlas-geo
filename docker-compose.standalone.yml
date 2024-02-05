@@ -1,29 +1,17 @@
 # TODO:share `geo` config with docker-compose.yml
 services:
   geo:
-      build:
-        context: .
-        dockerfile: ./Dockerfile
-      command: /geo/run.sh
-      container_name: geo
-      environment:
-        PGHOST:
-        PGDATABASE:
-        PGUSER:
-        PGPASSWORD:
-        OSM_DOWNLOAD_URL:
-        SKIP_DOWNLOAD:
-        SKIP_TAG_FILTER:
-        DEBUG:
-        ID_FILTER:
-        API_SECRET:
-        ENVIRONMENT:
-      volumes:
-        - osmfiles:/data
-        - ./geo:/geo
-      depends_on:
-        db:
-          condition: service_healthy
+    extends:
+      file: common.yml
+      service: geo
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./geo:/geo
+    depends_on:
+      db:
+        condition: service_healthy
   preview:
     image: nginx:stable-alpine
     container_name: preview
