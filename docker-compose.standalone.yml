@@ -1,0 +1,68 @@
+# TODO:share `geo` config with docker-compose.yml
+services:
+  geo:
+      build:
+        context: .
+        dockerfile: ./Dockerfile
+      command: /geo/run.sh
+      container_name: geo
+      environment:
+        PGHOST:
+        PGDATABASE:
+        PGUSER:
+        PGPASSWORD:
+        OSM_DOWNLOAD_URL:
+        SKIP_DOWNLOAD:
+        SKIP_TAG_FILTER:
+        DEBUG:
+        ID_FILTER:
+        API_SECRET:
+        ENVIRONMENT:
+      volumes:
+        - osmfiles:/data
+        - ./geo:/geo
+      depends_on:
+        db:
+          condition: service_healthy
+  preview:
+    image: nginx:stable-alpine
+    container_name: preview
+    volumes:
+    - ./preview/:/usr/share/nginx/html
+    ports:
+      - 80:80
+  tiles:
+    image: ghcr.io/maplibre/martin:v0.13.0
+    container_name: tiles
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}
+    command: ['--auto-bounds=calc']
+    ports:
+      - 3000:3000
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgis/postgis:14-3.3-alpine
+    container_name: db
+    shm_size: 1gb
+    restart: unless-stopped
+    environment:
+      PGUSER:
+      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+    ports:
+      - '5432:5432'
+    volumes:
+      - geodata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h ${PGHOST} -d ${PGDATABASE}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  geodata:
+  osmfiles:
