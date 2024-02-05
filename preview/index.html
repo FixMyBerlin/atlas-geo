@@ -282,13 +282,13 @@
         isPopupFixed = tryShowPopup(e);
     });
 
-    map.on("mousemove", function (e) {
-        if (isPopupFixed) return;
-        let showOk = tryShowPopup(e);
-        if (!showOk) {
-            popup.remove();
-        }
-    });
+    // map.on("mousemove", function (e) {
+    //     if (isPopupFixed) return;
+    //     let showOk = tryShowPopup(e);
+    //     if (!showOk) {
+    //         popup.remove();
+    //     }
+    // });
 
     map.on('load', async function () {
         map.showTileBoundaries = true;
