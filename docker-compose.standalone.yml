@@ -2,7 +2,7 @@
 services:
   geo:
     extends:
-      file: common.yml
+      file: docker-compose.geo.yml
       service: geo
     build:
       context: .

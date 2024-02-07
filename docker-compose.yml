@@ -5,7 +5,7 @@ services:
   geo:
     image: public.ecr.aws/n0p8j4k5/atlas/app:${GITHUB_SHA}
     extends:
-      file: common.yml
+      file: docker-compose.geo.yml
       service: geo
     networks:
       - app_bridge
