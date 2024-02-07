@@ -1,4 +1,3 @@
-# TODO:share `geo` config with docker-compose.yml
 services:
   geo:
     extends:
