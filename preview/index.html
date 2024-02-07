@@ -199,7 +199,7 @@
         hash: true
     });
 
-    const QUERY_THRESHOLD = 10;
+    const QUERY_THRESHOLD = 2;
     const popup = new maplibregl.Popup({
         closeButton: false,
         closeOnClick: false
@@ -247,20 +247,23 @@
                 </inspect_popup>`;
     }
 
-    const tryShowPopup = function (e) {
+    const getFeatures = function (x, y){
         const queryBox = [
-            [
-                e.point.x - QUERY_THRESHOLD,
-                e.point.y + QUERY_THRESHOLD
-            ],
-            [
-                e.point.x + QUERY_THRESHOLD,
-                e.point.y - QUERY_THRESHOLD
-            ]
-        ];
-
+              [
+                  x - QUERY_THRESHOLD,
+                  y + QUERY_THRESHOLD
+              ],
+              [
+                  x + QUERY_THRESHOLD,
+                  y - QUERY_THRESHOLD
+              ]
+          ];
         let features = map.queryRenderedFeatures(queryBox) || [];
-        features = features.filter(f => f.source !== 'carto');
+        return features.filter(f => f.source !== 'carto');
+    }
+
+    const tryShowPopup = function (e) {
+        let features = getFeatures(e.point.x, e.point.y)
         popup.setLngLat(e.lngLat);
         if (features.length !== 0) {
             const renderedPopup = renderFeatures(features);
@@ -282,13 +285,14 @@
         isPopupFixed = tryShowPopup(e);
     });
 
-    // map.on("mousemove", function (e) {
-    //     if (isPopupFixed) return;
-    //     let showOk = tryShowPopup(e);
-    //     if (!showOk) {
-    //         popup.remove();
-    //     }
-    // });
+    map.on("mousemove", function (e) {
+      let features = getFeatures(e.point.x, e.point.y)
+      if (features.length != 0) {
+        map.getCanvas().style.cursor = "pointer"
+      } else {
+        map.getCanvas().style.cursor = ""
+      }
+    });
 
     map.on('load', async function () {
         map.showTileBoundaries = true;
