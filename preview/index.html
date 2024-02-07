@@ -314,6 +314,10 @@
 
             // Show or hide layer when the toggle is clicked.
             link.onclick = function (e) {
+                // Close popup when activating pr deactivating a layer
+                popup.remove();
+                isPopupFixed = false;
+
                 e.preventDefault();
                 e.stopPropagation();
                 const sourceLayers = map.style.sourceCaches[sourceName]._source.vectorLayerIds;
