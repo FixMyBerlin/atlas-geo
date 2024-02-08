@@ -241,7 +241,7 @@
         if (srcLayer && srcLayer !== layerName) {
             layerName = `${layerName} / ${srcLayer}`;
         }
-        return `<div class="inspect_feature">
+        return `<div class="inspect_feature" name=${layerName}>
                   <div class="inspect_layer">
                     ${layerName}
                   </div>
@@ -317,7 +317,6 @@
             link.onclick = function (e) {
                 // Close popup when activating pr deactivating a layer
                 const inspector = document.getElementById("inspector")
-                inspector.innerHTML = "";
 
                 e.preventDefault();
                 e.stopPropagation();
@@ -332,6 +331,7 @@
                         const layerId = `${sourceName}_${sourceLayer}_${type}`;
                         if (isShowing) {
                             map.removeLayer(layerId)
+                            document.getElementsByName(sourceName).forEach(node => node.remove())
                         } else {
                             map.addLayer({
                                 id: layerId,
