@@ -4,7 +4,6 @@ version: "3"
 services:
   geo:
     image: public.ecr.aws/n0p8j4k5/atlas/app:${GITHUB_SHA}
-    command: /geo/run.sh
     container_name: geo
     environment:
       PGHOST:

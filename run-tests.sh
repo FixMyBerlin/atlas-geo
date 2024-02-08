@@ -1,2 +1,2 @@
 #!/bin/bash
-docker compose run --build geo /geo/run-tests.sh
+docker compose run --build --entrypoint /geo/run-tests.sh geo
