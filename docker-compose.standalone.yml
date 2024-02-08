@@ -1,16 +1,4 @@
 services:
-  geo:
-    extends:
-      file: docker-compose.geo.yml
-      service: geo
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    volumes:
-      - ./geo:/geo
-    depends_on:
-      db:
-        condition: service_healthy
   preview:
     image: nginx:stable-alpine
     container_name: preview
@@ -29,6 +17,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - app_bridge
   db:
     image: postgis/postgis:14-3.3-alpine
     container_name: db
@@ -48,6 +38,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - app_bridge
 volumes:
   geodata:
   osmfiles:
+networks:
+  app_bridge:
+    name: app_bridge
