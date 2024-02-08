@@ -76,7 +76,14 @@
             left: 10px;
             width: 250px;
         }
-
+        #container-right {
+            position: absolute;
+            overflow: scroll;
+            top: 0px;
+            bottom: 0px;
+            right: 0px;
+            width: 400px;
+        }
         .resizer {
             position: absolute;
             cursor: col-resize;
@@ -89,14 +96,12 @@
         }
     </style>
 
-    <!-- popup styling -->
+    <!-- inspector styling -->
     <style>
-        .maplibregl-popup-content {
-            overflow-y: auto;
-            padding: 0 10px;
-        }
 
-        .inspect_popup {
+        #inspector {
+            padding: 10px;
+            background-color: rgba(256, 256, 256, 0.85);
             color: #333;
             display: table;
         }
@@ -133,11 +138,14 @@
 <div id="container">
     <nav id="menu">
         <label for="menu-search">Tile Sources</label>
-        <input oninput="handleSearch()" id="menu-search" type="search" placeholder="Search..."/>
+        <input oninput="handleSearch()" type="search" placeholder="Search..."/>
     </nav>
     <div class="resizer"></div>
 </div>
 <div id="map"></div>
+<div id="container-right">
+  <div id="inspector"></div>
+</div>
 <script>
     //ignore this, it's just to allow user resize menu by drag
     const container = document.getElementById('container');
@@ -263,27 +271,15 @@
         return features.filter(f => f.source !== 'carto');
     }
 
-    const tryShowPopup = function (e) {
+    map.on("click", e => {
         let features = getFeatures(e.point.x, e.point.y)
-        popup.setLngLat(e.lngLat);
+        const inspector = document.getElementById("inspector")
         if (features.length !== 0) {
             const renderedPopup = renderFeatures(features);
-            popup.setHTML(renderedPopup);
-            popup.addTo(map);
-            return true;
+            inspector.innerHTML = renderedPopup;
         } else {
-            return false;
+            inspector.innerHTML = "";
         }
-    }
-
-    let isPopupFixed = false;
-    map.on("click", e => {
-        //remove the popup immediately if it's benn shown already
-        if (popup.isOpen()) {
-            popup.remove();
-            isPopupFixed = false;
-        }
-        isPopupFixed = tryShowPopup(e);
     });
 
     map.on("mousemove", function (e) {
@@ -320,8 +316,8 @@
             // Show or hide layer when the toggle is clicked.
             link.onclick = function (e) {
                 // Close popup when activating pr deactivating a layer
-                popup.remove();
-                isPopupFixed = false;
+                const inspector = document.getElementById("inspector")
+                inspector.innerHTML = "";
 
                 e.preventDefault();
                 e.stopPropagation();
