@@ -82,6 +82,7 @@
             top: 0px;
             right: 0px;
             max-height: 100%;
+            max-width: 400px;
         }
         .resizer {
             position: absolute;
@@ -103,7 +104,6 @@
             background-color: rgba(256, 256, 256, 0.85);
             color: #333;
             display: table;
-            width: 400;
         }
 
         .inspect_feature {
@@ -130,6 +130,7 @@
 
         .inspect_property_value {
             display: table-cell;
+            word-wrap: normal;
         }
     </style>
 </head>
@@ -272,7 +273,10 @@
     }
 
     map.on("click", e => {
-        let features = getFeatures(e.point.x, e.point.y)
+        const features = getFeatures(e.point.x, e.point.y)
+        features.forEach(x => {
+
+        })
         const inspector = document.getElementById("inspector")
         if (features.length !== 0) {
             const renderedPopup = renderFeatures(features);
@@ -315,9 +319,6 @@
 
             // Show or hide layer when the toggle is clicked.
             link.onclick = function (e) {
-                // Close popup when activating pr deactivating a layer
-                const inspector = document.getElementById("inspector")
-
                 e.preventDefault();
                 e.stopPropagation();
                 const sourceLayers = map.style.sourceCaches[sourceName]._source.vectorLayerIds;
@@ -329,9 +330,12 @@
                 for (const sourceLayer of sourceLayers) {
                     for (const [type, geoType, alpha] of [["circle", "Point", 0.8], ["line", "LineString", 0.8], ["fill", "Polygon", 0.4]]) {
                         const layerId = `${sourceName}_${sourceLayer}_${type}`;
+                        const selectedLayerId = `${layerId}_selected`
                         if (isShowing) {
                             map.removeLayer(layerId)
-                            document.getElementsByName(sourceName).forEach(node => node.remove())
+                            map.removeLayer(selectedLayerId)
+                            // Remove layer features from inspector
+                            document.getElementsByName(sourceName).forEach(node => {node.remove()})
                         } else {
                             map.addLayer({
                                 id: layerId,
@@ -340,6 +344,14 @@
                                 'source-layer': sourceLayer,
                                 filter: ['==', '$type', geoType],
                                 paint: {[`${type}-color`]: `rgba(${color},${alpha})`}
+                            });
+                            map.addLayer({
+                                id: selectedLayerId,
+                                source: sourceName,
+                                type: type,
+                                'source-layer': sourceLayer,
+                                filter: ['boolean', false],
+                                paint: {[`${type}-color`]: "rgb(100, 100, 100)"}
                             });
                         }
                     }
