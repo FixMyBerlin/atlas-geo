@@ -13,6 +13,16 @@ local tags_prefixed = {
   'traffic_sign:backward',
 }
 
+local minZoom11 = Set({ 'residential',
+  'living_street',
+  'bicycle_road',
+  'pedestrian',
+  'unclassified',
+  'residential_priority_road',
+  'unspecified_road',
+  'service_road',
+  'service_alley' })
+
 function RoadClassification(object)
   local tags = object.tags
   local result_tags = {}
@@ -95,6 +105,10 @@ function RoadClassification(object)
   end
   if tags['oneway:bicycle'] == 'no' or tags['oneway:bicycle'] then
     result_tags['road_oneway:bicycle'] = tags['oneway:bicycle']
+  end
+
+  if minZoom11[result_tags.road] then
+    result_tags._minZoom = 11
   end
 
   CopyTags(result_tags, tags, tags_copied)
