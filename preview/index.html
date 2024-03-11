@@ -274,9 +274,6 @@
 
     map.on("click", e => {
         const features = getFeatures(e.point.x, e.point.y)
-        features.forEach(x => {
-
-        })
         const inspector = document.getElementById("inspector")
         if (features.length !== 0) {
             const renderedPopup = renderFeatures(features);
