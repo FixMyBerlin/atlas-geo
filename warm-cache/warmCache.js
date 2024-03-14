@@ -7,7 +7,7 @@ import chalk from 'chalk'
 import dotenv from 'dotenv'
 import fetch from 'node-fetch'
 
-import { lat2tile, lng2tile, formatBytes, formatDuration, log } from './util.js'
+import { lat2tile, lng2tile, formatBytes, formatDuration, log, tile2bbox } from './util.js'
 
 dotenv.config()
 dotenv.config({ path: `.env.local`, override: true })
@@ -29,6 +29,8 @@ const { lat, lng, zoomFrom, zoomTo } = map
 const numZoomLevels = zoomTo - zoomFrom + 1
 const totalNumTiles = numZoomLevels * numTilesX * numTilesY * config.urls.length
 
+const debuggingBboxes = []
+
 const padLeft = (num) => String(num).padStart(String(totalNumTiles).length)
 const fetchTiles = async () => {
   let tile = 1
@@ -44,23 +46,22 @@ const fetchTiles = async () => {
       log(
         chalk.inverse(
           '⚑ ' +
-          urlTemplate
-            .replace('{z}', z)
-            .replace('{x}', `${minX}-${maxX}`)
-            .replace('{y}', `${minY}-${maxY}`),
-        ),
+            urlTemplate
+              .replace('{z}', z)
+              .replace('{x}', `${minX}-${maxX}`)
+              .replace('{y}', `${minY}-${maxY}`)
+        )
       )
       for (let x = minX; x <= maxX; x++) {
         for (let y = minY; y <= maxY; y++) {
           const zf = Math.floor(z)
           const url =
             tilesBaseUrl + urlTemplate.replace('{z}', zf).replace('{x}', x).replace('{y}', y)
-          log(
-            `🡇 ${padLeft(tile++)}/${totalNumTiles} - ${Math.floor(zf)}/${x}/${y} - ${url}`,
-          )
+          log(`🡇 ${padLeft(tile++)}/${totalNumTiles} - ${Math.floor(zf)}/${x}/${y} - ${url}`)
+
           const start = new Date()
           const response = await fetch(url)
-          let duration = formatDuration(new Date() - start)
+          const duration = formatDuration(new Date() - start)
           const statusFormatted = `${response.status} - ${response.statusText}`
           if (response.status === 200) {
             const cacheStatus = response.headers.get('x-cache-status') || 'NO-CACHE'
@@ -71,10 +72,46 @@ const fetchTiles = async () => {
           } else {
             log(chalk.red(`⚠ ${statusFormatted}`))
           }
+
+          debuggingBboxes.push({
+            bbox: tile2bbox(x, y, zf),
+            zoom: zf,
+            url,
+            status: response.status,
+            statusText: response.statusText,
+            duration,
+            cacheStatus: response.headers.get('x-cache-status') || 'NO-CACHE',
+            contentLength: response.headers.get('content-length'),
+          })
         }
       }
     }
   }
+  const debugGeoJSON = {
+    type: 'FeatureCollection',
+    features: debuggingBboxes.map((d) => ({
+      type: 'Feature',
+      properties: {
+        zoom: d.zoom,
+        url: d.url,
+        status: d.status,
+        statusText: d.statusText,
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [d.bbox[0], d.bbox[1]],
+            [d.bbox[2], d.bbox[1]],
+            [d.bbox[2], d.bbox[3]],
+            [d.bbox[0], d.bbox[3]],
+            [d.bbox[0], d.bbox[1]],
+          ],
+        ],
+      },
+    })),
+  }
+  fs.writeFileSync('debug.geojson', JSON.stringify(debugGeoJSON, null, 2))
   process.exit(0)
 }
 
