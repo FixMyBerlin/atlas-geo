@@ -1,4 +1,5 @@
 import chalk from 'chalk'
+import fs from 'fs'
 
 export function log(...args) {
   const t = new Date().toISOString()
@@ -124,4 +125,30 @@ Filter options:
   -g, --grep        display results where the request line contains given string
 `.trim()
   )
+}
+
+export function saveGeojson(tiles, filename) {
+  const geoJson = {
+    type: 'FeatureCollection',
+    features: tiles.map(({ coords: [x, y, z], ...properties }) => {
+      const bbox = tile2bbox(x, y, z)
+      return {
+        type: 'Feature',
+        properties,
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [bbox[0], bbox[1]],
+              [bbox[2], bbox[1]],
+              [bbox[2], bbox[3]],
+              [bbox[0], bbox[3]],
+              [bbox[0], bbox[1]],
+            ],
+          ],
+        },
+      }
+    }),
+  }
+  fs.writeFileSync(filename, JSON.stringify(geoJson, null, 2))
 }

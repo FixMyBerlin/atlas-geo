@@ -7,7 +7,7 @@ import chalk from 'chalk'
 import dotenv from 'dotenv'
 import fetch from 'node-fetch'
 
-import { lat2tile, lng2tile, formatBytes, formatDuration, log, tile2bbox } from './util.js'
+import { lat2tile, lng2tile, formatBytes, formatDuration, log, saveGeojson } from './util.js'
 
 dotenv.config()
 dotenv.config({ path: `.env.local`, override: true })
@@ -29,10 +29,9 @@ const { lat, lng, zoomFrom, zoomTo } = map
 const numZoomLevels = zoomTo - zoomFrom + 1
 const totalNumTiles = numZoomLevels * numTilesX * numTilesY * config.urls.length
 
-const debuggingBboxes = []
-
 const padLeft = (num) => String(num).padStart(String(totalNumTiles).length)
 const fetchTiles = async () => {
+  const requestedTiles = []
   let tile = 1
   for (let i in config.urls) {
     const urlTemplate = config.urls[i]
@@ -49,8 +48,8 @@ const fetchTiles = async () => {
             urlTemplate
               .replace('{z}', z)
               .replace('{x}', `${minX}-${maxX}`)
-              .replace('{y}', `${minY}-${maxY}`)
-        )
+              .replace('{y}', `${minY}-${maxY}`),
+        ),
       )
       for (let x = minX; x <= maxX; x++) {
         for (let y = minY; y <= maxY; y++) {
@@ -73,8 +72,8 @@ const fetchTiles = async () => {
             log(chalk.red(`⚠ ${statusFormatted}`))
           }
 
-          debuggingBboxes.push({
-            bbox: tile2bbox(x, y, zf),
+          requestedTiles.push({
+            coords: [x, y, zf],
             zoom: zf,
             url,
             status: response.status,
@@ -87,32 +86,8 @@ const fetchTiles = async () => {
       }
     }
   }
-  const debugGeoJSON = {
-    type: 'FeatureCollection',
-    features: debuggingBboxes.map((d) => ({
-      type: 'Feature',
-      properties: {
-        zoom: d.zoom,
-        url: d.url,
-        status: d.status,
-        statusText: d.statusText,
-      },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [d.bbox[0], d.bbox[1]],
-            [d.bbox[2], d.bbox[1]],
-            [d.bbox[2], d.bbox[3]],
-            [d.bbox[0], d.bbox[3]],
-            [d.bbox[0], d.bbox[1]],
-          ],
-        ],
-      },
-    })),
-  }
-  fs.writeFileSync('debug.geojson', JSON.stringify(debugGeoJSON, null, 2))
-  process.exit(0)
+  return requestedTiles
 }
 
-fetchTiles()
+const tiles = await fetchTiles()
+saveGeojson(tiles, 'debug.geojson')
