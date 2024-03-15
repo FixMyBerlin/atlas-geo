@@ -1,7 +1,8 @@
 import chalk from 'chalk'
+import fs from 'fs'
 
 export function log(...args) {
-  const t = (new Date()).toISOString()
+  const t = new Date().toISOString()
   console.log(t, ...args)
 }
 
@@ -15,8 +16,30 @@ export function lat2tile(lat, zoom) {
     ((1 -
       Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) /
       2) *
-      Math.pow(2, zoom),
+      Math.pow(2, zoom)
   )
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {number} z
+ * @returns {Array} The bounding box [lonMin, latMin, lonMax, latMax]
+ */
+export function tile2bbox(x, y, z) {
+  const lonMin = (x / Math.pow(2, z)) * 360 - 180
+  const lonMax = ((x + 1) / Math.pow(2, z)) * 360 - 180
+  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z)
+  const latMin = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)))
+  const latMax =
+    (180 / Math.PI) *
+    Math.atan(
+      0.5 *
+        (Math.exp(n - (2 * Math.PI) / Math.pow(2, z)) -
+          Math.exp(-(n - (2 * Math.PI) / Math.pow(2, z))))
+    )
+
+  return [lonMin, latMin, lonMax, latMax]
 }
 
 function colorString(v, s, colorTable) {
@@ -77,17 +100,18 @@ export function parseSize(size) {
   let [_, bytes, unit] = m
   return Math.round(
     bytes *
-    {
-      B: 1,
-      K: 1024,
-      M: 1024 ** 2,
-      G: 1024 ** 3,
-    }[unit],
+      {
+        B: 1,
+        K: 1024,
+        M: 1024 ** 2,
+        G: 1024 ** 3,
+      }[unit]
   )
 }
 
 export function displayHelp() {
-  console.log(`
+  console.log(
+    `
 Usage: ./filterLog.ts [OPTION]... [LOGFILE]...
 Filter Logfile.
 Example: ./filterLog.ts --grep=/roads/8 --hit --size=500K --time=1 warm-cache.log
@@ -101,4 +125,30 @@ Filter options:
   -g, --grep        display results where the request line contains given string
 `.trim()
   )
+}
+
+export function saveGeojson(tiles, filename) {
+  const geoJson = {
+    type: 'FeatureCollection',
+    features: tiles.map(({ coords: [x, y, z], ...properties }) => {
+      const bbox = tile2bbox(x, y, z)
+      return {
+        type: 'Feature',
+        properties,
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [bbox[0], bbox[1]],
+              [bbox[2], bbox[1]],
+              [bbox[2], bbox[3]],
+              [bbox[0], bbox[3]],
+              [bbox[0], bbox[1]],
+            ],
+          ],
+        },
+      }
+    }),
+  }
+  fs.writeFileSync(filename, JSON.stringify(geoJson, null, 2))
 }
