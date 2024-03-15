@@ -22,8 +22,8 @@ log(`Loading config ${cacheWarmingConfigPath}...`)
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, cacheWarmingConfigPath), 'utf8'))
 
 const { viewport, map } = config
-const numTilesX = Math.ceil(viewport.width / 256)
-const numTilesY = Math.ceil(viewport.height / 256)
+const numTilesX = Math.ceil(viewport.width / 512)
+const numTilesY = Math.ceil(viewport.height / 512)
 
 const { lat, lng, zoomFrom, zoomTo } = map
 const numZoomLevels = zoomTo - zoomFrom + 1
@@ -38,10 +38,10 @@ const fetchTiles = async () => {
     for (let z = zoomFrom; z <= zoomTo; z++) {
       const centerLat = lat2tile(lat, z)
       const centerLng = lng2tile(lng, z)
-      const minX = centerLng - Math.floor((numTilesX - 1) / 2)
-      const maxX = minX + numTilesX + 1
-      const minY = centerLat - Math.floor((numTilesY - 1) / 2)
-      const maxY = minY + numTilesY + 1
+      const minX = centerLng - Math.floor(numTilesX / 2)
+      const maxX = minX + numTilesX - 1
+      const minY = centerLat - Math.floor(numTilesY / 2)
+      const maxY = minY + numTilesY - 1
       log(
         chalk.inverse(
           '⚑ ' +
