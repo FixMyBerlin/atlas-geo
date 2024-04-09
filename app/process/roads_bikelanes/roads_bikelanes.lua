@@ -16,7 +16,7 @@ require("ConvertCyclewayOppositeSchema")
 require("Maxspeed")
 require("Lit")
 require("RoadClassification")
-require("RoadGeneralisation")
+require("RoadMinzoom")
 require("SurfaceQuality")
 require("Bikelanes")
 require("BikelanesPresence")
@@ -104,6 +104,8 @@ function osm2pgsql.process_way(object)
       result.length = formattedMeratorLengthMeters
       result.road = results.road
 
+      MergeTable(results, BikelaneMinzoom(tags, result, cycleways))
+
       -- Hacky cleanup tags we don't need to make the file smaller
       result._infrastructureExists = nil -- not used in atlas-app
       result.segregated = nil            -- no idea why that is present in the inspector frontend for way 9717355
@@ -129,6 +131,7 @@ function osm2pgsql.process_way(object)
     MergeTable(results, Maxspeed(object))
   end
   MergeTable(results, BikelanesPresence(object, cycleways))
+  MergeTable(results, RoadMinzoom(tags, results))
 
   -- We need sidewalk for Biklanes(), but not for `roads`
   if not IsSidepath(tags) then
@@ -139,8 +142,6 @@ function osm2pgsql.process_way(object)
         geom = object:as_linestring()
       })
     else
-      MergeTable(results, RoadGeneralisation(tags, results))
-
       roadsTable:insert({
         tags = results,
         meta = Metadata(object),
