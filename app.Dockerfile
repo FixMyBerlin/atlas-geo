@@ -14,7 +14,7 @@ RUN apt update && \
   apt install -y osm2pgsql osmium-tool postgresql-client-15 tzdata wget libpq-dev curl lua5.3 luarocks && \
   apt upgrade -y
 # Lua package manager – https://luarocks.org/, https://packages.ubuntu.com/luarocks
-# "penlight": https://github.com/lunarmodules/Penlight, https://luarocks.org/modules/steved/penlight
+# "penlight": https://github.com/lunarmodules/Penlight, https://luarocks.org/modules/tieske/penlight
 RUN luarocks install penlight
 # "inspect": https://github.com/kikito/inspect.lua, https://luarocks.org/modules/kikito/inspect (recommended in https://github.com/openstreetmap/osm2pgsql/blob/master/flex-config/README.md#dependencies)
 # RUN luarocks install inspect
