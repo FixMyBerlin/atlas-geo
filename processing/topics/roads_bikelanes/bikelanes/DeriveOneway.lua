@@ -2,6 +2,7 @@ package.path = package.path .. ";/processing/topics/helper/?.lua"
 require("Set")
 require("Sanitize")
 
+-- Our data should be explicit about tagging that OSM considers default/implicit as well assumed defaults.
 local onewayAssumedNo = Set({
   'bicycleRoad',                        -- road shared, both lanes
   'bicycleRoad_vehicleDestination',     -- road shared, both lanes
@@ -23,7 +24,8 @@ local onewayImplicitYes = Set({
   'cyclewayOnHighway_exclusive',                   -- "lane"-like
   'cyclewayOnHighway_advisoryOrExclusive',         -- "lane"-like
   'cyclewayOnHighwayBetweenLanes',                 -- "lane"-like
-  'sharedBusLane',                                 -- "shared lane"-like
+  'sharedBusLaneBikeWithBus',                      -- "shared lane"-like
+  'sharedBusLaneBusWithBike',                      -- "shared lane"-like
   'footAndCyclewayShared_adjoining',               -- "shared lane"-like
   'footAndCyclewayShared_adjoiningOrIsolated',     -- unclear, fall back to "shared lane"-like
   'footAndCyclewaySegregated_adjoining',           -- "lane"-like
@@ -37,7 +39,6 @@ local onewayImplicitYes = Set({
 ---@return 'yes' | 'no' | 'car_not_bike' | 'assumed_no' | 'implicit_yes' | 'unknown'
 --- Derive oneway information based on tags and given category
 function DeriveOneway(tags, category)
-
   -- if `oneway:bicycle` is explicitly tagged check if it differs from `oneway`
   if tags['oneway:bicycle'] == 'yes' then
     return 'yes'
@@ -48,16 +49,19 @@ function DeriveOneway(tags, category)
       return 'no'
     end
   end
-  if Sanitize(tags.oneway, {'yes', 'no'}) then
+
+  if Sanitize(tags.oneway, { 'yes', 'no' }) then
     return tags.oneway
   end
 
   if onewayAssumedNo[category] then
     return 'assumed_no'
   end
+
   if onewayImplicitYes[category] then
     return 'implicit_yes'
   end
+
   -- This should never happen / maybe in some kind of TODO-list
   return 'unknown'
 end

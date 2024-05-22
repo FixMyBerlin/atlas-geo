@@ -28,6 +28,7 @@ require("ExtractPublicTags")
 require("Round")
 require("DefaultId")
 require("PathsGeneralization")
+require("RoadTodos")
 
 local roadsTable = osm2pgsql.define_table({
   name = 'roads',
@@ -88,20 +89,18 @@ function osm2pgsql.process_way(object)
   local allowed_highways = JoinSets({ HighwayClasses, MajorRoadClasses, MinorRoadClasses, PathClasses })
   if not allowed_highways[tags.highway] then return end
 
-  local exclude, _ = ExcludeHighways(tags)
-  if exclude then return end
-  if object.tags.area == 'yes' then return end
+  local excludeHighway, _ = ExcludeHighways(tags)
+  if excludeHighway then return end
 
-  -- TODO: Rething this. We should only exclude crossing which are not bikelane-crossings. See categories#crossing
-  -- if tags.footway == 'crossing' and not (tags.bicycle == "yes" or tags.bicycle == "designated") then
-  --   return
-  -- end
+  -- Skip any area. See https://github.com/FixMyBerlin/private-issues/issues/1038 for more.
+  if tags.area == 'yes' then return end
 
   -- ====== (B) General conversions ======
   ConvertCyclewayOppositeSchema(tags)
   -- Calculate and format length, see also https://github.com/osm2pgsql-dev/osm2pgsql/discussions/1756#discussioncomment-3614364
-  -- Use https://epsg.io/25833 (same as `boundaryStats.sql`); update `atlas_roads--length--tooltip` if changed.
+  -- Use https://epsg.io/25833 (same as `presenceStats.sql`); update `atlas_roads--length--tooltip` if changed.
   local length = Round(object:as_linestring():transform(25833):length(), 2)
+
   -- ====== (C) Compute results and insert ======
   local results = {
     name = tags.name or tags.ref or tags['is_sidepath:of:name'],
@@ -119,10 +118,9 @@ function osm2pgsql.process_way(object)
       publicTags.name = results.name
       publicTags.length = length
       publicTags.road = results.road
-      publicTags.prefix = cycleway._prefix
       publicTags._parent_highway = cycleway._parent_highway
 
-      cycleway.segregated = nil            -- no idea why that is present in the inspector frontend for way 9717355
+      cycleway.segregated = nil -- no idea why that is present in the inspector frontend for way 9717355
       bikelanesTable:insert({
         id = cycleway._id,
         tags = publicTags,
@@ -137,6 +135,7 @@ function osm2pgsql.process_way(object)
     MergeTable(results, Maxspeed(object))
   end
   MergeTable(results, BikelanesPresence(object, cycleways))
+  results.todos = ToMarkdownList(RoadTodos(tags, results))
 
   -- We need sidewalk for Biklanes(), but not for `roads`
   if not IsSidepath(tags) then
@@ -149,6 +148,8 @@ function osm2pgsql.process_way(object)
         id = DefaultId(object)
       })
     else
+      -- The `ref` (e.g. "B 264") is used in your map style and only relevant for higher road classes.
+      results.name_ref = tags.ref
       roadsTable:insert({
         tags = results,
         meta = Metadata(object),
