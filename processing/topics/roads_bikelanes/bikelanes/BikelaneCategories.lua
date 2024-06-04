@@ -17,7 +17,7 @@ function BikelaneCategory.new(args)
   return self
 end
 
-function BikelaneCategory:checkCondition(tags)
+function BikelaneCategory:check(tags)
   return self.condition(tags)
 end
 
@@ -359,8 +359,8 @@ local needsClarification = BikelaneCategory.new({
 })
 
 local function defineCategory(tags, categoryDefinitions)
-  for _, categoryDefinition in pairs(categoryDefinitions) do
-    local category = categoryDefinition:checkCondition(tags)
+  for _, categories in pairs(categoryDefinitions) do
+    local category = categories:checkCondition(tags)
     if category ~= nil then
       return category
     end
@@ -380,7 +380,7 @@ end
 
 function CategorizeBikelane(tags)
   -- The order specifies the precedence; first one with a result win.
-  local categoryDefinitions = {
+  local categories = {
     cyclewayLink,
     crossing,
     livingStreet,
@@ -400,5 +400,5 @@ function CategorizeBikelane(tags)
     -- Needs to be last
     needsClarification,
   }
-  return defineCategory(tags, categoryDefinitions)
+  return defineCategory(tags, categories)
 end
