@@ -88,9 +88,9 @@ end
 OneOfPredicate = TagPredicate:new()
 
 function OneOfPredicate:new(tag, values, sanitzer)
-  local pp = TagPredicate:new(tag, sanitzer)
-  pp.condition = function(x) return Set(values)[x] end
-  setmetatable(pp, self)
+  local oop = TagPredicate:new(tag, sanitzer)
+  oop.condition = function(x) return Set(values)[x] end
+  setmetatable(oop, self)
   self.__index = self
-  return pp
+  return oop
 end
