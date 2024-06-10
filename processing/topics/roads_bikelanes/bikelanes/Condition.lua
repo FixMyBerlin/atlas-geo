@@ -7,13 +7,14 @@ require("Set")
 Condition = {}
 Condition.__index = Condition
 
-function Condition:new()
-  local c = {}
-  setmetatable(c, self)
+function Condition:new(name)
+  local cond = {name = name}
+  setmetatable(cond, self)
   self.__index = self
-  return c
+  return cond
 end
 
+-- JUNCTORS: are used to combine different conditions
 --- @class Conjunction
 --- This class implements the conjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
 Conjunction = Condition:new()
@@ -42,56 +43,95 @@ function Disjunction:eval(x)
   return self.A:eval(x) or self.B:eval(x)
 end
 
-function Condition.__add(c1, c2)
-  return Disjunction:new(c1, c2)
-end
-
-function Condition.__mul(c1, c2)
-  return Conjunction(c1, c2)
-end
-
 --- @class Negation
---- This class implements the negation of a Conditions `C` such that it evaluates to `not C:eval()`
+--- This class implements the negation of a Condition `C` such that it evaluates to `not C:eval()`
 Negation = Condition:new()
 function Negation:new(condition)
-  local n = {condition = condition}
-  setmetatable(n, self)
+  local neg = {condition = condition}
+  setmetatable(neg, self)
   self.__index = self
-  return n
+  return neg
 end
 
 function Negation:eval(x)
   return not self.condition:eval(x)
 end
 
-function Condition:negated()
-  return Negation:new(self)
+function Condition.__unm(cond)
+  return Negation:new(cond)
 end
 
-function Negation:negated()
-  return self.condition
+-- double negation equals the original condition
+function Negation.__unm(neg)
+  return neg.condition
 end
 
+-- DeMorgan rules
+function Conjunction.__unm(conj)
+  return Disjunction:new(-conj.A, -conj.B)
+end
+
+function Disjunction.__unm(disj)
+  return Conjunction:new(-disj.A, -disj.B)
+end
+
+function Condition.__add(A, B)
+  return Disjunction:new(A, B)
+end
+
+-- Assoziativity
+function Disjunction.__mul(A, B)
+  if getmetatable(B) == Disjunction then
+    return Disjunction:new(A, B)
+  end
+  return Disjunction:new(A.A * B, A.B * B)
+end
+
+function Condition.__mul(A, B)
+  if getmetatable(B) == getmetatable(Disjunction) then
+    return Disjunction.__mul(B, A)
+  end
+  return Conjunction:new(A, B)
+end
+
+-- tostring methods
+function Condition:__tostring()
+  return self.name
+end
+
+function Negation:__tostring()
+  return "¬" .. self.condition:__tostring()
+end
+
+function Disjunction:__tostring()
+  return "(" .. self.A:__tostring() .. " ∨ " .. self.B:__tostring() .. ")"
+end
+
+function Conjunction:__tostring()
+  return "(" .. self.A:__tostring() .. " ∧ " .. self.B:__tostring() .. ")"
+end
+
+-- PREDICATES: are conditions specific to our data
 --- @class Predicate is an atomic condition
 Predicate = Condition:new()
 Predicate.count = 0
 function Predicate:new()
-  local p = {id = self.count}
+  local pred = {id = self.count}
   self.count = self.count + 1
-  setmetatable(p, self)
+  setmetatable(pred, self)
   self.__index = self
-  return p
+  return pred
 end
 
 --- @class TagPredicate is a Predicate evaluated on `tag`
 TagPredicate = Predicate:new()
 function TagPredicate:new(tag, sanitizer)
-  local tp = Predicate:new()
-  tp.sanitizer = sanitizer or function (x) return x end
-  tp.tag = tag
-  setmetatable(tp, self)
+  local tPred = Predicate:new()
+  tPred.sanitizer = sanitizer or function (x) return x end
+  tPred.tag = tag
+  setmetatable(tPred, self)
   self.__index = self
-  return tp
+  return tPred
 end
 
 function TagPredicate:eval(x)
@@ -101,39 +141,39 @@ end
 EqualsPredicate = TagPredicate:new()
 
 function EqualsPredicate:new(tag, val, sanitizer)
-  local ip = TagPredicate:new(tag, sanitizer)
-  ip.condition = function(x) return x == val end
-  setmetatable(ip, self)
+  local ePred = TagPredicate:new(tag, sanitizer)
+  ePred.condition = function(x) return x == val end
+  setmetatable(ePred, self)
   self.__index = self
-  return ip
+  return ePred
 end
 
 ContainsPredicate = TagPredicate:new()
 
 function ContainsPredicate:new(tag, val, sanitizer)
-  local cp = TagPredicate:new(tag, sanitizer)
-  cp.condition = function(x) return string.find(x, val, 1, true) ~= nil end
-  setmetatable(cp, self)
+  local cPred = TagPredicate:new(tag, sanitizer)
+  cPred.condition = function(x) return string.find(x, val, 1, true) ~= nil end
+  setmetatable(cPred, self)
   self.__index = self
-  return cp
+  return cPred
 end
 
 PrefixPredicate = TagPredicate:new()
 
 function PrefixPredicate:new(tag, prefix, sanitzer)
-  local pp = TagPredicate:new(tag, sanitzer)
-  pp.condition = function(x) return string.find(x, prefix, 1, true) == 1 end
-  setmetatable(pp, self)
+  local pPred = TagPredicate:new(tag, sanitzer)
+  pPred.condition = function(x) return string.find(x, prefix, 1, true) == 1 end
+  setmetatable(pPred, self)
   self.__index = self
-  return pp
+  return pPred
 end
 
 OneOfPredicate = TagPredicate:new()
 
 function OneOfPredicate:new(tag, values, sanitzer)
-  local oop = TagPredicate:new(tag, sanitzer)
-  oop.condition = function(x) return Set(values)[x] end
-  setmetatable(oop, self)
+  local ooPred = TagPredicate:new(tag, sanitzer)
+  ooPred.condition = function(x) return Set(values)[x] end
+  setmetatable(ooPred, self)
   self.__index = self
-  return oop
+  return ooPred
 end
