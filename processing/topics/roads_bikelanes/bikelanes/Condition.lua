@@ -107,11 +107,28 @@ function Negation:__tostring()
 end
 
 function Disjunction:__tostring()
-  return "(" .. self.A:__tostring() .. " ∨ " .. self.B:__tostring() .. ")"
+  local stringA = self.A:__tostring()
+  local stringB = self.B:__tostring()
+  if getmetatable(self.A) == Conjunction then
+    stringA = '(' .. stringA .. ')'
+  end
+  if getmetatable(self.B) == Conjunction then
+    stringB = '(' .. stringB .. ')'
+  end
+  return stringA .. ' ∨ ' .. stringB
 end
 
 function Conjunction:__tostring()
-  return "(" .. self.A:__tostring() .. " ∧ " .. self.B:__tostring() .. ")"
+  local stringA = self.A:__tostring()
+  local stringB = self.B:__tostring()
+  if getmetatable(self.A) == Disjunction then
+    stringA = '(' .. stringA .. ')'
+  end
+  if getmetatable(self.B) == Disjunction then
+    stringB = '(' .. stringB .. ')'
+  end
+  return stringA .. ' ∧ ' .. stringB
+
 end
 
 -- PREDICATES: are conditions specific to our data
