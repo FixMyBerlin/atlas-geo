@@ -84,7 +84,7 @@ function Conjunction:eval(x)
 end
 
 function Conjunction.__unm(conj)
-  return Disjunction:new(-conj.A, -conj.B)
+  return -conj.A + -conj.B
 end
 
 function Conjunction:__tostring()
@@ -112,7 +112,7 @@ function Disjunction:new(A, B)
 end
 
 function Disjunction.__unm(disj)
-  return Conjunction:new(-disj.A, -disj.B)
+  return -disj.A * -disj.B
 end
 
 function Disjunction:eval(x)
