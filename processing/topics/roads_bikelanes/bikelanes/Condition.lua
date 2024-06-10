@@ -121,13 +121,13 @@ end
 
 function Disjunction.__mul(A, B)
   if getmetatable(A) == getmetatable(B) then
-    return Disjunction:new(Disjunction:new(A.A * B.A, A.B * B.A), Disjunction:new(A.A * B.B, A.B * B.B))
+    return (A.A * B.A) + (A.A * B.B) + (A.B * B.A) + (A.B * B.B)
   end
   if getmetatable(A) == Disjunction then
-    return Disjunction:new(A.A * B, A.B * B)
+    return (A.A * B) + (A.B * B)
   end
    if getmetatable(B) == Disjunction then
-    return Disjunction:new(B.A * A, B.B * A )
+    return (B.A * A) + (B.B * A)
   end
   error("This should never happen")
 end
