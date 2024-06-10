@@ -5,7 +5,7 @@ local _metamethods = { -- all metamethods except __index
   '__add', '__call', '__concat', '__div', '__le', '__lt', '__mod', '__mul', '__pow', '__sub', '__tostring', '__unm'
 }
 
-local function setmetamethods(class)
+local function inheritmetamethods(class)
   local superClass = getmetatable(class)
   for _, mm in pairs(_metamethods) do
     class[mm] = superClass[mm]
@@ -46,7 +46,7 @@ end
 --- @class Negation
 --- This class implements the negation of a Condition `C` such that it evaluates to `not C:eval()`
 Negation = Condition:new()
-setmetamethods(Negation)
+inheritmetamethods(Negation)
 
 function Negation:new(condition)
   local neg = {condition = condition}
@@ -70,7 +70,7 @@ end
 --- @class Conjunction
 --- This class implements the conjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
 Conjunction = Condition:new()
-setmetamethods(Conjunction)
+inheritmetamethods(Conjunction)
 
 function Conjunction:new(A, B)
   local conj = {A = A, B = B}
@@ -102,7 +102,7 @@ end
 --- @class Disjunction
 --- This class implements the disjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
 Disjunction = Condition:new()
-setmetamethods(Disjunction)
+inheritmetamethods(Disjunction)
 
 function Disjunction:new(A, B)
   local disj = {A = A, B = B}
