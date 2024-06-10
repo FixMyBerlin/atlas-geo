@@ -68,6 +68,10 @@ function Condition:negated()
   return Negation:new(self)
 end
 
+function Negation:negated()
+  return self.condition
+end
+
 --- @class Predicate is an atomic condition
 Predicate = Condition:new()
 Predicate.count = 0
