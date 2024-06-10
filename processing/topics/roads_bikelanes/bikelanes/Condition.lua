@@ -2,31 +2,70 @@ package.path = package.path .. ";/processing/topics/helper/?.lua"
 require("Set")
 
 --- @class Condition
---- this class represents a condition which can either be atomic or a composition of several conditions
+--- This class is an abstract class from which specific implementatios can inhert from.
+--- It implements only the two function `__add` and `__mul`.
 Condition = {}
 Condition.__index = Condition
 
-function Condition:new(condition)
-  local p = {condition = condition}
-  setmetatable(p, self)
+function Condition:new()
+  local c = {}
+  setmetatable(c, self)
   self.__index = self
-  return p
+  return c
 end
 
-function Condition:eval(x)
-  return self.condition(x)
+--- @class Conjunction
+--- This class implements the conjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
+Conjunction = Condition:new()
+function Conjunction:new(A, B)
+  local conj = {A = A, B = B}
+  setmetatable(conj, self)
+  self.__index = self
+  return conj
+end
+
+function Conjunction:eval(x)
+  return self.A:eval(x) and self.B:eval(x)
+end
+
+--- @class Disjunction
+--- This class implements the disjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
+Disjunction = Condition:new()
+function Disjunction:new(A, B)
+  local disj = {A = A, B = B}
+  setmetatable(disj, self)
+  self.__index = self
+  return disj
+end
+
+function Disjunction:eval(x)
+  return self.A:eval(x) or self.B:eval(x)
 end
 
 function Condition.__add(c1, c2)
-  return Condition:new(function(x) return c1:eval(x) or c2:eval(x) end)
+  return Disjunction:new(c1, c2)
 end
 
 function Condition.__mul(c1, c2)
-  return Condition:new(function(x) return c1:eval(x) and c2:eval(x) end)
+  return Conjunction(c1, c2)
+end
+
+--- @class Negation
+--- This class implements the negation of a Conditions `C` such that it evaluates to `not C:eval()`
+Negation = Condition:new()
+function Negation:new(condition)
+  local n = {condition = condition}
+  setmetatable(n, self)
+  self.__index = self
+  return n
+end
+
+function Negation:eval(x)
+  return not self.condition:eval(x)
 end
 
 function Condition:negated()
-  return Condition:new(function(x) return not self:eval(x) end)
+  return Negation:new(self)
 end
 
 --- @class Predicate is an atomic condition
