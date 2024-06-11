@@ -18,64 +18,79 @@ local function subclass(superClass)
   return class
 end
 
---- @class Condition
+--- @class BooleanFunction
 --- This class is an abstract class from which specific implementatios can inhert from.
---- It implements only the two function `__add` and `__mul`.
-Condition = {}
-Condition.__index = Condition
+BooleanFunction = {}
+BooleanFunction.__index = BooleanFunction
 
-function Condition:new(name)
+function BooleanFunction:new(name)
   local cond = {name = name}
   setmetatable(cond, self)
   self.__index = self
   return cond
 end
 
-function Condition.__unm(cond)
+function BooleanFunction.__unm(cond)
   return Negation:new(cond)
 end
 
-function Condition.__add(A, B)
+function BooleanFunction.__add(A, B)
   return Disjunction:new(A, B)
 end
 
-function Condition.__mul(A, B)
+function BooleanFunction.__mul(A, B)
   if getmetatable(A) == Disjunction or getmetatable(B) == Disjunction then
     return Disjunction.__mul(A, B)
   end
   return Conjunction:new(A, B)
 end
 
-function Condition:__tostring()
-  return self.name
+--- @class Variable
+Variable = subclass(BooleanFunction)
+Variable.count = 0
+
+function Variable:new(value)
+  local var = {value = value, id=self.count}
+  self.count = self.count + 1
+  setmetatable(var, self)
+  self.__index = self
+  return var
+end
+
+function BooleanFunction:__tostring()
+  return 'x' .. self.id
+end
+
+function BooleanFunction:eval()
+  return self.value
 end
 
 --- @class Negation
---- This class implements the negation of a Condition `C` such that it evaluates to `not C:eval()`
-Negation = subclass(Condition)
+--- This class implements the negation of a BooleanFunction `C` such that it evaluates to `not C:eval()`
+Negation = subclass(BooleanFunction)
 
-function Negation:new(condition)
-  local neg = {condition = condition}
+function Negation:new(bf)
+  local neg = {bf = bf}
   setmetatable(neg, self)
   self.__index = self
   return neg
 end
 
 function Negation:eval(x)
-  return not self.condition:eval(x)
+  return not self.bf:eval(x)
 end
 
 function Negation.__unm(neg)
-  return neg.condition
+  return neg.bf
 end
 
 function Negation:__tostring()
-  return "¬" .. self.condition:__tostring()
+  return "¬" .. self.bf:__tostring()
 end
 
 --- @class Conjunction
---- This class implements the conjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
-Conjunction = subclass(Condition)
+--- This class implements the conjunction of two truth functions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
+Conjunction = subclass(BooleanFunction)
 
 function Conjunction:new(A, B)
   local conj = {A = A, B = B}
@@ -105,8 +120,8 @@ function Conjunction:__tostring()
 end
 
 --- @class Disjunction
---- This class implements the disjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
-Disjunction = subclass(Condition)
+--- This class implements the disjunction of two truth functions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
+Disjunction = subclass(BooleanFunction)
 
 function Disjunction:new(A, B)
   local disj = {A = A, B = B}
@@ -148,9 +163,10 @@ function Disjunction:__tostring()
   return stringA .. ' ∨ ' .. stringB
 end
 
--- PREDICATES: are conditions specific to our data
+-- PREDICATES: are truth functions specific to our data
 --- @class Predicate is an atomic condition
-Predicate = subclass(Condition)
+Predicate = subclass(BooleanFunction)
+Predicate.count = 0
 
 function Predicate:new()
   local pred = {id = self.count}
@@ -172,14 +188,14 @@ function TagPredicate:new(tag, sanitizer)
 end
 
 function TagPredicate:eval(x)
-  return x[self.tag] ~= nil and self.condition(self.sanitizer(x[self.tag]))
+  return x[self.tag] ~= nil and self.predicate(self.sanitizer(x[self.tag]))
 end
 
 EqualsPredicate = subclass(TagPredicate)
 
 function EqualsPredicate:new(tag, val, sanitizer)
   local ePred = TagPredicate:new(tag, sanitizer)
-  ePred.condition = function(x) return x == val end
+  ePred.predicate = function(x) return x == val end
   setmetatable(ePred, self)
   self.__index = self
   return ePred
@@ -189,7 +205,7 @@ ContainsPredicate = subclass(TagPredicate)
 
 function ContainsPredicate:new(tag, val, sanitizer)
   local cPred = TagPredicate:new(tag, sanitizer)
-  cPred.condition = function(x) return string.find(x, val, 1, true) ~= nil end
+  cPred.predicate = function(x) return string.find(x, val, 1, true) ~= nil end
   setmetatable(cPred, self)
   self.__index = self
   return cPred
@@ -199,7 +215,7 @@ PrefixPredicate = subclass(TagPredicate)
 
 function PrefixPredicate:new(tag, prefix, sanitzer)
   local pPred = TagPredicate:new(tag, sanitzer)
-  pPred.condition = function(x) return string.find(x, prefix, 1, true) == 1 end
+  pPred.predicate = function(x) return string.find(x, prefix, 1, true) == 1 end
   setmetatable(pPred, self)
   self.__index = self
   return pPred
@@ -209,7 +225,7 @@ OneOfPredicate = subclass(TagPredicate)
 
 function OneOfPredicate:new(tag, values, sanitzer)
   local ooPred = TagPredicate:new(tag, sanitzer)
-  ooPred.condition = function(x) return Set(values)[x] end
+  ooPred.predicate = function(x) return Set(values)[x] end
   setmetatable(ooPred, self)
   self.__index = self
   return ooPred
