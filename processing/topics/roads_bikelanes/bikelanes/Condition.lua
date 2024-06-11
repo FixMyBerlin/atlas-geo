@@ -11,6 +11,13 @@ local function inheritmetamethods(class)
     class[mm] = superClass[mm]
   end
 end
+
+local function subclass(superClass)
+  local class = superClass:new()
+  inheritmetamethods(class)
+  return class
+end
+
 --- @class Condition
 --- This class is an abstract class from which specific implementatios can inhert from.
 --- It implements only the two function `__add` and `__mul`.
@@ -45,8 +52,7 @@ end
 
 --- @class Negation
 --- This class implements the negation of a Condition `C` such that it evaluates to `not C:eval()`
-Negation = Condition:new()
-inheritmetamethods(Negation)
+Negation = subclass(Condition)
 
 function Negation:new(condition)
   local neg = {condition = condition}
@@ -69,8 +75,7 @@ end
 
 --- @class Conjunction
 --- This class implements the conjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
-Conjunction = Condition:new()
-inheritmetamethods(Conjunction)
+Conjunction = subclass(Condition)
 
 function Conjunction:new(A, B)
   local conj = {A = A, B = B}
@@ -101,8 +106,7 @@ end
 
 --- @class Disjunction
 --- This class implements the disjunction of two Conditions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
-Disjunction = Condition:new()
-inheritmetamethods(Disjunction)
+Disjunction = subclass(Condition)
 
 function Disjunction:new(A, B)
   local disj = {A = A, B = B}
@@ -146,8 +150,8 @@ end
 
 -- PREDICATES: are conditions specific to our data
 --- @class Predicate is an atomic condition
-Predicate = Condition:new()
-Predicate.count = 0
+Predicate = subclass(Condition)
+
 function Predicate:new()
   local pred = {id = self.count}
   self.count = self.count + 1
@@ -171,7 +175,7 @@ function TagPredicate:eval(x)
   return x[self.tag] ~= nil and self.condition(self.sanitizer(x[self.tag]))
 end
 
-EqualsPredicate = TagPredicate:new()
+EqualsPredicate = subclass(TagPredicate)
 
 function EqualsPredicate:new(tag, val, sanitizer)
   local ePred = TagPredicate:new(tag, sanitizer)
@@ -181,7 +185,7 @@ function EqualsPredicate:new(tag, val, sanitizer)
   return ePred
 end
 
-ContainsPredicate = TagPredicate:new()
+ContainsPredicate = subclass(TagPredicate)
 
 function ContainsPredicate:new(tag, val, sanitizer)
   local cPred = TagPredicate:new(tag, sanitizer)
@@ -191,7 +195,7 @@ function ContainsPredicate:new(tag, val, sanitizer)
   return cPred
 end
 
-PrefixPredicate = TagPredicate:new()
+PrefixPredicate = subclass(TagPredicate)
 
 function PrefixPredicate:new(tag, prefix, sanitzer)
   local pPred = TagPredicate:new(tag, sanitzer)
@@ -201,7 +205,7 @@ function PrefixPredicate:new(tag, prefix, sanitzer)
   return pPred
 end
 
-OneOfPredicate = TagPredicate:new()
+OneOfPredicate = subclass(TagPredicate)
 
 function OneOfPredicate:new(tag, values, sanitzer)
   local ooPred = TagPredicate:new(tag, sanitzer)
