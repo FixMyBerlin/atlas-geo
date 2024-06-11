@@ -57,16 +57,16 @@ function Variable:new(value)
   return var
 end
 
-function BooleanFunction:__tostring()
+function Variable:__tostring()
   return 'x' .. self.id
 end
 
-function BooleanFunction:eval()
+function Variable:__call()
   return self.value
 end
 
 --- @class Negation
---- This class implements the negation of a BooleanFunction `C` such that it evaluates to `not C:eval()`
+--- This class implements the negation of a BooleanFunction `C` such that it evaluates to `not C`
 Negation = subclass(BooleanFunction)
 
 function Negation:new(bf)
@@ -76,8 +76,8 @@ function Negation:new(bf)
   return neg
 end
 
-function Negation:eval(x)
-  return not self.bf:eval(x)
+function Negation:__call(x)
+  return not self.bf(x)
 end
 
 function Negation.__unm(neg)
@@ -89,7 +89,7 @@ function Negation:__tostring()
 end
 
 --- @class Conjunction
---- This class implements the conjunction of two truth functions `A` and `B` such that it evaluates to `A:eval() and B:eval()`
+--- This class implements the conjunction of two truth functions `A` and `B` such that it evaluates to `A and B`
 Conjunction = subclass(BooleanFunction)
 
 function Conjunction:new(A, B)
@@ -99,8 +99,8 @@ function Conjunction:new(A, B)
   return conj
 end
 
-function Conjunction:eval(x)
-  return self.A:eval(x) and self.B:eval(x)
+function Conjunction:__call(x)
+  return self.A(x) and self.B(x)
 end
 
 function Conjunction.__unm(conj)
@@ -120,7 +120,7 @@ function Conjunction:__tostring()
 end
 
 --- @class Disjunction
---- This class implements the disjunction of two truth functions `A` and `B` such that it evaluates to `A:eval() or B:eval()`
+--- This class implements the disjunction of two truth functions `A` and `B` such that it evaluates to `A or B`
 Disjunction = subclass(BooleanFunction)
 
 function Disjunction:new(A, B)
@@ -134,8 +134,8 @@ function Disjunction.__unm(disj)
   return -disj.A * -disj.B
 end
 
-function Disjunction:eval(x)
-  return self.A:eval(x) or self.B:eval(x)
+function Disjunction:__call(x)
+  return self.A(x) or self.B(x)
 end
 
 function Disjunction.__mul(A, B)
@@ -163,31 +163,21 @@ function Disjunction:__tostring()
   return stringA .. ' ∨ ' .. stringB
 end
 
--- PREDICATES: are truth functions specific to our data
---- @class Predicate is an atomic condition
-Predicate = subclass(BooleanFunction)
-Predicate.count = 0
-
-function Predicate:new()
-  local pred = {id = self.count}
-  self.count = self.count + 1
-  setmetatable(pred, self)
-  self.__index = self
-  return pred
-end
 
 --- @class TagPredicate is a Predicate evaluated on `tag`
-TagPredicate = Predicate:new()
+TagPredicate = subclass(BooleanFunction)
+
 function TagPredicate:new(tag, sanitizer)
-  local tPred = Predicate:new()
-  tPred.sanitizer = sanitizer or function (x) return x end
-  tPred.tag = tag
+  local tPred = {
+    tag = tag,
+    sanitizer = sanitizer or function (x) return x end
+  }
   setmetatable(tPred, self)
   self.__index = self
   return tPred
 end
 
-function TagPredicate:eval(x)
+function TagPredicate:__call(x)
   return x[self.tag] ~= nil and self.predicate(self.sanitizer(x[self.tag]))
 end
 
