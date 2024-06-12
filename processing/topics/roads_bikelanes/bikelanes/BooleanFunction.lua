@@ -77,7 +77,7 @@ function Negation:new(variable)
 end
 
 function Negation:__call(x)
-  return not self.bf(x)
+  return not self.variable(x)
 end
 
 function Negation.__unm(neg)
