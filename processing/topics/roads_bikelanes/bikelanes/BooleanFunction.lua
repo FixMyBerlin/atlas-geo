@@ -69,8 +69,8 @@ end
 --- This class implements the negation of a BooleanFunction `C` such that it evaluates to `not C`
 Negation = subclass(BooleanFunction)
 
-function Negation:new(bf)
-  local neg = {bf = bf}
+function Negation:new(variable)
+  local neg = {variable = variable}
   setmetatable(neg, self)
   self.__index = self
   return neg
@@ -81,11 +81,11 @@ function Negation:__call(x)
 end
 
 function Negation.__unm(neg)
-  return neg.bf
+  return neg.variable
 end
 
 function Negation:__tostring()
-  return "¬" .. self.bf:__tostring()
+  return "¬" .. self.variable:__tostring()
 end
 
 --- @class Conjunction
