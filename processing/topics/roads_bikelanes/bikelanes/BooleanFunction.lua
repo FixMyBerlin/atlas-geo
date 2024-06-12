@@ -30,19 +30,25 @@ function BooleanFunction:new(name)
   return cond
 end
 
-function BooleanFunction.__unm(cond)
-  return Negation:new(cond)
+function BooleanFunction:__unm()
+  return Negation:new(self)
 end
 
-function BooleanFunction.__add(A, B)
-  return Disjunction:new(A, B)
-end
-
-function BooleanFunction.__mul(A, B)
-  if getmetatable(A) == Disjunction or getmetatable(B) == Disjunction then
-    return Disjunction.__mul(A, B)
+function BooleanFunction.__add(X, Y)
+  if getmetatable(Y) == Disjunction then
+    return Disjunction.__add(Y, X)
   end
-  return Conjunction:new(A, B)
+  return Disjunction:new({X, Y})
+end
+
+function BooleanFunction.__mul(X, Y)
+  if getmetatable(Y) == Disjunction then
+    return Disjunction.__mul(Y, X)
+  end
+  if getmetatable(Y) == Conjunction then
+    return Conjunction.__mul(Y, X)
+  end
+  return Conjunction:new({X, Y})
 end
 
 --- @class Variable
@@ -80,8 +86,8 @@ function Negation:__call(x)
   return not self.variable(x)
 end
 
-function Negation.__unm(neg)
-  return neg.variable
+function Negation:__unm()
+  return self.variable
 end
 
 function Negation:__tostring()
@@ -89,78 +95,113 @@ function Negation:__tostring()
 end
 
 --- @class Conjunction
---- This class implements the conjunction of two truth functions `A` and `B` such that it evaluates to `A and B`
+--- This class implements the conjunction of two truth functions `X` and `Y` such that it evaluates to `X and Y`
 Conjunction = subclass(BooleanFunction)
 
-function Conjunction:new(A, B)
-  local conj = {A = A, B = B}
+function Conjunction:new(conj)
   setmetatable(conj, self)
   self.__index = self
   return conj
 end
 
 function Conjunction:__call(x)
-  return self.A(x) and self.B(x)
+  for _, term in ipairs(self) do
+    if not term(x) then return false end
+  end
+  return true
 end
 
-function Conjunction.__unm(conj)
-  return -conj.A + -conj.B
+function Conjunction:__unm()
+  local disj = {}
+  for _, term in ipairs(self) do
+    table.insert(disj, -term)
+  end
+  return Disjunction:new(disj)
+end
+
+function Conjunction.__mul(X, Y)
+  if getmetatable(Y) == Conjunction then
+    for _, term in Y do
+      table.insert(X, term)
+    end
+  else
+    table.insert(X, Y)
+  end
+  return X
 end
 
 function Conjunction:__tostring()
-  local stringA = self.A:__tostring()
-  local stringB = self.B:__tostring()
-  if getmetatable(self.A) == Disjunction then
-    stringA = '(' .. stringA .. ')'
+  local result = {}
+  for _, term in ipairs(self) do
+    local stringified = term:__tostring()
+    if getmetatable(term) == Disjunction then
+      stringified = '(' .. stringified .. ')'
+    end
+    table.insert(result, stringified)
   end
-  if getmetatable(self.B) == Disjunction then
-    stringB = '(' .. stringB .. ')'
-  end
-  return stringA .. ' ∧ ' .. stringB
+  return table.concat(result, ' ∧ ')
 end
 
 --- @class Disjunction
---- This class implements the disjunction of two truth functions `A` and `B` such that it evaluates to `A or B`
+--- This class implements the disjunction of two truth functions `X` and `Y` such that it evaluates to `X or Y`
 Disjunction = subclass(BooleanFunction)
 
-function Disjunction:new(A, B)
-  local disj = {A = A, B = B}
+function Disjunction:new(disj)
   setmetatable(disj, self)
   self.__index = self
   return disj
 end
 
-function Disjunction.__unm(disj)
-  return -disj.A * -disj.B
+function Disjunction:__unm()
+  local conj = {}
+  for _, term in ipairs(self) do
+    table.insert(conj, -term)
+  end
+  return Conjunction:new(conj)
 end
 
 function Disjunction:__call(x)
-  return self.A(x) or self.B(x)
+  for _, term in ipairs(self) do
+    if term(x) then return true end
+  end
+  return false
 end
 
-function Disjunction.__mul(A, B)
-  if getmetatable(A) == getmetatable(B) then
-    return (A.A * B.A) + (A.A * B.B) + (A.B * B.A) + (A.B * B.B)
+function Disjunction.__add(X, Y)
+  if getmetatable(Y) == Disjunction then
+    for _, term in Y do
+      table.insert(X, term)
+    end
+  else
+    table.insert(X, Y)
   end
-  if getmetatable(A) == Disjunction then
-    return (A.A * B) + (A.B * B)
+  return X
+end
+
+function Disjunction.__mul(X, Y)
+  local disj = {}
+  for _, subtermX in ipairs(X) do
+    if getmetatable(Y) == Disjunction then
+      for _, subtermY in ipairs(Y) do
+        table.insert(disj, subtermX * subtermY)
+      end
+    else
+      table.insert(disj, subtermX * Y)
+    end
   end
-   if getmetatable(B) == Disjunction then
-    return (B.A * A) + (B.B * A)
-  end
-  error("This should never happen")
+  return Disjunction:new(disj)
 end
 
 function Disjunction:__tostring()
-  local stringA = self.A:__tostring()
-  local stringB = self.B:__tostring()
-  if getmetatable(self.A) == Conjunction then
-    stringA = '(' .. stringA .. ')'
+  local result = {}
+  for _, term in ipairs(self) do
+    local stringified = term:__tostring()
+    if getmetatable(term) == Conjunction then
+      stringified = '(' .. stringified .. ')'
+    end
+    table.insert(result, stringified)
   end
-  if getmetatable(self.B) == Conjunction then
-    stringB = '(' .. stringB .. ')'
-  end
-  return stringA .. ' ∨ ' .. stringB
+  return table.concat(result, ' ∨ ')
 end
 
 
