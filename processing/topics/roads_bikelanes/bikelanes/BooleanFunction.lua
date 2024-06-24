@@ -255,9 +255,9 @@ end
 OneOfPredicate = subclass(TagPredicate)
 
 function OneOfPredicate:new(tag, values, sanitzer)
-  local ooPred = TagPredicate:new(tag, sanitzer)
-  ooPred.predicate = function(x) return Set(values)[x] end
-  setmetatable(ooPred, self)
-  self.__index = self
-  return ooPred
+  local disj = {}
+  for _, val in ipairs(values) do
+    table.insert(disj, EqualsPredicate(tag, val, sanitzer))
+  end
+  return Disjunction:new(disj)
 end
