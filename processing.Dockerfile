@@ -1,11 +1,15 @@
-FROM ubuntu:mantic as lua
+FROM ubuntu:mantic AS testing
 
 # Install Lua and "luarocks" (Lua package manager) – https://luarocks.org/, https://packages.ubuntu.com/luarocks
 RUN apt update && apt install -y lua5.3 liblua5.3-dev luarocks
 
 RUN luarocks install busted
 
-FROM lua as processing
+COPY processing /processing/
+ENTRYPOINT [ "busted" ]
+CMD ["--pattern=%.test%.lua$", "/processing/topics/"]
+
+FROM testing AS processing
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Berlin
@@ -33,6 +37,5 @@ COPY warm-cache/warmCache.js .
 WORKDIR /processing
 # 'data' folder is root
 RUN mkdir /data
-COPY processing /processing/
 RUN chmod +x /processing/*.sh
 ENTRYPOINT /processing/run.sh
