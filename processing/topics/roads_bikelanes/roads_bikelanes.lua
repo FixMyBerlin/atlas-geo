@@ -31,6 +31,7 @@ require("PathsGeneralization")
 require("RoadTodos")
 require("CreateTodoList")
 
+
 local roadsTable = osm2pgsql.define_table({
   name = 'roads',
   ids = { type = 'any', id_column = 'osm_id', type_column = 'osm_type' },
