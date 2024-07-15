@@ -1,15 +1,13 @@
-name: Regenerate production tiles
+name: Regenerate staging tiles
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * *'
 
 jobs:
   trigger_generation:
     environment:
-      name: production
-      url: https://tiles.radverkehrsatlas.de
+      name: staging
+      url: https://staging-tiles.radverkehrsatlas.de
     runs-on: ubuntu-latest
 
     steps:
